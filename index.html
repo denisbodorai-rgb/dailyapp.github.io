@@ -54,8 +54,11 @@
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <header class="pt-12 pb-4 px-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10 transition-colors" style="background-color: var(--card-color); border-color: var(--border-color);">
+    <header class="pt-12 pb-4 px-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10 transition-colors flex justify-between items-center" style="background-color: var(--card-color); border-color: var(--border-color);">
         <h1 id="page-title" class="text-2xl font-bold" style="color: var(--text-main);">Journal</h1>
+        <button onclick="switchTab('settings', 'Settings')" class="p-2 rounded-full active:bg-gray-200 dark:active:bg-gray-700 transition-colors">
+            <i data-lucide="settings" class="w-6 h-6" style="color: var(--text-main);"></i>
+        </button>
     </header>
 
     <main class="flex-1 overflow-y-auto pb-24 px-4 pt-4" id="main-content">
@@ -152,8 +155,8 @@
                 </div>
             </div>
             <div class="ios-card p-6 rounded-2xl shadow-sm">
-                <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Tab Order</h2>
-                <p class="text-xs text-gray-400 mb-4">Drag and drop not yet supported in PWA, please select order:</p>
+                <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Main Tab Order</h2>
+                <p class="text-xs text-gray-400 mb-4">Arrange your primary tools:</p>
                 <div id="tab-order-list" class="space-y-2"></div>
                 <button onclick="saveTabOrder()" class="w-full mt-4 bg-blue-500 text-white p-3 rounded-xl font-semibold active:scale-95 transition-transform">Apply Order</button>
             </div>
@@ -194,7 +197,7 @@
         let habits = JSON.parse(localStorage.getItem('daily_habits')) || [];
         let notes = JSON.parse(localStorage.getItem('daily_notes')) || [];
         let customEvents = JSON.parse(localStorage.getItem('daily_events')) || [];
-        let tabOrder = JSON.parse(localStorage.getItem('daily_tab_order')) || ['notes', 'homework', 'calendar', 'timer', 'habits', 'settings'];
+        let tabOrder = JSON.parse(localStorage.getItem('daily_tab_order')) || ['notes', 'homework', 'calendar', 'timer', 'habits'];
         let currentTheme = localStorage.getItem('daily_theme') || 'light';
 
         const TAB_MAP = {
