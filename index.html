@@ -1,0 +1,154 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Daily Life OS</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Daily OS">
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --ios-bg: #f2f2f7;
+            --ios-card: #ffffff;
+            --ios-accent: #007aff;
+        }
+        body {
+            background-color: var(--ios-bg);
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .nav-item.active {
+            color: var(--ios-accent);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Top Header -->
+    <header class="pt-12 pb-4 px-6 bg-white border-b border-gray-200 sticky top-0 z-10">
+        <h1 id="page-title" class="text-2xl font-bold text-gray-800">Journal</h1>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto pb-24 px-4 pt-4" id="main-content">
+        
+        <!-- Notes Tab -->
+        <div id="notes" class="tab-content active">
+            <div class="bg-white p-4 rounded-2xl shadow-sm mb-4">
+                <p class="text-gray-500 italic text-center">Your daily thoughts go here...</p>
+            </div>
+        </div>
+
+        <!-- Homework Tab -->
+        <div id="homework" class="tab-content">
+            <div class="bg-white p-4 rounded-2xl shadow-sm mb-4">
+                <p class="text-gray-500 italic text-center">Your tasks and tests will appear here.</p>
+            </div>
+        </div>
+
+        <!-- Calendar Tab -->
+        <div id="calendar" class="tab-content">
+            <div class="bg-white p-4 rounded-2xl shadow-sm mb-4">
+                <p class="text-gray-500 italic text-center">Your schedule is empty.</p>
+            </div>
+        </div>
+
+        <!-- Timer Tab -->
+        <div id="timer" class="tab-content">
+            <div class="bg-white p-8 rounded-3xl shadow-sm text-center mb-4">
+                <div class="text-6xl font-mono font-bold mb-4 text-gray-800">25:00</div>
+                <button class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold active:scale-95 transition-transform">Start Pomodoro</button>
+            </div>
+        </div>
+
+        <!-- Habits Tab -->
+        <div id="habits" class="tab-content">
+            <div class="bg-white p-4 rounded-2xl shadow-sm mb-4">
+                <p class="text-gray-500 italic text-center">Ready to track some habits?</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 w-full bg-white/80 backdrop-blur-md border-t border-gray-200 safe-area-bottom">
+        <div class="flex justify-around items-center py-3">
+            <button onclick="switchTab('notes', 'Journal')" class="nav-item active flex flex-col items-center gap-1 transition-colors">
+                <i data-lucide="book-open" class="w-6 h-6"></i>
+                <span class="text-[10px] font-medium">Journal</span>
+            </button>
+            <button onclick="switchTab('homework', 'Homework')" class="nav-item flex flex-col items-center gap-1 transition-colors text-gray-400">
+                <i data-lucide="book" class="w-6 h-6"></i>
+                <span class="text-[10px] font-medium">Homework</span>
+            </button>
+            <button onclick="switchTab('calendar', 'Calendar')" class="nav-item flex flex-col items-center gap-1 transition-colors text-gray-400">
+                <i data-lucide="calendar" class="w-6 h-6"></i>
+                <span class="text-[10px] font-medium">Calendar</span>
+            </button>
+            <button onclick="switchTab('timer', 'Timer')" class="nav-item flex flex-col items-center gap-1 transition-colors text-gray-400">
+                <i data-lucide="timer" class="w-6 h-6"></i>
+                <span class="text-[10px] font-medium">Timer</span>
+            </button>
+            <button onclick="switchTab('habits', 'Habits')" class="nav-item flex flex-col items-center gap-1 transition-colors text-gray-400">
+                <i data-lucide="check-circle" class="w-6 h-6"></i>
+                <span class="text-[10px] font-medium">Habits</span>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        function switchTab(tabId, title) {
+            // Update Title
+            document.getElementById('page-title').innerText = title;
+
+            // Update Tab Content
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+
+            // Update Nav Items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                item.classList.add('text-gray-400');
+            });
+            
+            // Find the clicked button (based on the function call)
+            const activeBtn = Array.from(document.querySelectorAll('.nav-item')).find(btn => 
+                btn.innerText.trim() === title
+            );
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                activeBtn.classList.remove('text-gray-400');
+            }
+        }
+    </script>
+</body>
+</html>
