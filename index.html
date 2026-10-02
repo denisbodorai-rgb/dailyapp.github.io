@@ -14,74 +14,57 @@
     
     <style>
         :root {
-            --ios-bg: #f2f2f7;
-            --ios-card: #ffffff;
-            --ios-accent: #007aff;
+            --bg-color: #f2f2f7;
+            --card-color: #ffffff;
+            --text-main: #1c1c1e;
+            --text-muted: #8e8e93;
+            --border-color: #d1d1d6;
+            --accent-color: #007aff;
+        }
+        body.dark-mode {
+            --bg-color: #000000;
+            --card-color: #1c1c1e;
+            --text-main: #ffffff;
+            --text-muted: #8e8e93;
+            --border-color: #38383a;
+            --accent-color: #0a84ff;
         }
         body {
-            background-color: var(--ios-bg);
+            background-color: var(--bg-color);
+            color: var(--text-main);
             -webkit-tap-highlight-color: transparent;
             user-select: none;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
         }
-        .safe-area-bottom {
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.2s ease-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .nav-item.active {
-            color: var(--ios-accent);
-        }
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-        }
-        .calendar-day {
-            aspect-ratio: 1/1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            position: relative;
-        }
-        .dot-container {
-            display: flex;
-            gap: 2px;
-            justify-content: center;
-            margin-top: 2px;
-        }
-        .dot {
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-        }
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .nav-item.active { color: var(--accent-color); }
+        .ios-card { background-color: var(--card-color); border: 1px solid var(--border-color); }
+        .ios-input { background-color: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); }
+        
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .calendar-day { aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.8rem; position: relative; }
+        .dot-container { display: flex; gap: 2px; justify-content: center; margin-top: 2px; flex-wrap: wrap; }
+        .dot { width: 4px; height: 4px; border-radius: 50%; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <header class="pt-12 pb-4 px-6 bg-white border-b border-gray-200 sticky top-0 z-10">
-        <h1 id="page-title" class="text-2xl font-bold text-gray-800">Journal</h1>
+    <header class="pt-12 pb-4 px-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10 transition-colors" style="background-color: var(--card-color); border-color: var(--border-color);">
+        <h1 id="page-title" class="text-2xl font-bold" style="color: var(--text-main);">Journal</h1>
     </header>
 
     <main class="flex-1 overflow-y-auto pb-24 px-4 pt-4" id="main-content">
         
         <!-- Notes Tab -->
         <div id="notes" class="tab-content active">
-            <div class="bg-white p-6 rounded-2xl shadow-sm mb-6">
-                <h2 class="text-lg font-semibold mb-4">New Entry</h2>
-                <textarea id="note-text" rows="3" placeholder="What's on your mind?" class="w-full p-3 bg-gray-100 rounded-xl outline-none border border-transparent focus:border-blue-400 transition-all resize-none"></textarea>
+            <div class="ios-card p-6 rounded-2xl shadow-sm mb-6">
+                <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">New Entry</h2>
+                <textarea id="note-text" rows="3" placeholder="What's on your mind?" class="w-full p-3 rounded-xl outline-none ios-input focus:ring-2 focus:ring-blue-400 transition-all resize-none"></textarea>
                 <button onclick="addNote()" class="w-full mt-3 bg-blue-500 text-white p-3 rounded-xl font-semibold active:scale-95 transition-transform">Save Note</button>
             </div>
             <div id="notes-list" class="space-y-3"></div>
@@ -89,14 +72,20 @@
 
         <!-- Homework Tab -->
         <div id="homework" class="tab-content">
-            <div class="bg-white p-6 rounded-2xl shadow-sm mb-6">
-                <h2 class="text-lg font-semibold mb-4">Add New Task</h2>
+            <div class="ios-card p-6 rounded-2xl shadow-sm mb-6">
+                <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Add New Task</h2>
                 <div class="space-y-3">
-                    <input type="text" id="hw-subject" placeholder="Subject (e.g. Math)" class="w-full p-3 bg-gray-100 rounded-xl outline-none border border-transparent focus:border-blue-400 transition-all">
-                    <input type="text" id="hw-task" placeholder="What needs to be done?" class="w-full p-3 bg-gray-100 rounded-xl outline-none border border-transparent focus:border-blue-400 transition-all">
+                    <select id="hw-subject" class="w-full p-3 rounded-xl outline-none ios-input focus:ring-2 focus:ring-blue-400 transition-all">
+                        <option value="" disabled selected>Select Subject</option>
+                        <option value="ANJ">ANJ</option><option value="RUJ">RUJ</option><option value="DEJ">DEJ</option>
+                        <option value="FYZ">FYZ</option><option value="GEO">GEO</option><option value="CHE">CHE</option>
+                        <option value="INF">INF</option><option value="MAT">MAT</option><option value="OBN">OBN</option>
+                        <option value="SJL">SJL</option><option value="LIT">LIT</option><option value="TSV">TSV</option>
+                    </select>
+                    <input type="text" id="hw-task" placeholder="What needs to be done?" class="w-full p-3 rounded-xl outline-none ios-input focus:ring-2 focus:ring-blue-400 transition-all">
                     <div class="flex gap-2">
-                        <input type="date" id="hw-date" class="flex-1 p-3 bg-gray-100 rounded-xl outline-none border border-transparent focus:border-blue-400 transition-all">
-                        <select id="hw-type" class="p-3 bg-gray-100 rounded-xl outline-none border border-transparent focus:border-blue-400 transition-all">
+                        <input type="date" id="hw-date" class="flex-1 p-3 rounded-xl outline-none ios-input focus:ring-2 focus:ring-blue-400 transition-all">
+                        <select id="hw-type" class="p-3 rounded-xl outline-none ios-input focus:ring-2 focus:ring-blue-400 transition-all">
                             <option value="homework">HW</option>
                             <option value="test">Test</option>
                         </select>
@@ -109,13 +98,12 @@
 
         <!-- Calendar Tab -->
         <div id="calendar" class="tab-content">
-            <div class="bg-white p-6 rounded-2xl shadow-sm">
+            <div class="ios-card p-6 rounded-2xl shadow-sm">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 id="calendar-month" class="text-lg font-bold">Month Year</h2>
-                    <div class="flex gap-2">
-                        <span class="flex items-center gap-1 text-xs text-gray-600"><span class="w-2 h-2 bg-blue-500 rounded-full"></span> HW</span>
-                        <span class="flex items-center gap-1 text-xs text-gray-600"><span class="w-2 h-2 bg-red-500 rounded-full"></span> Test</span>
-                    </div>
+                    <h2 id="calendar-month" class="text-lg font-bold" style="color: var(--text-main);">Month Year</h2>
+                    <button onclick="openEventModal()" class="bg-blue-500 text-white p-2 rounded-full active:scale-90 transition-transform">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                    </button>
                 </div>
                 <div class="calendar-grid text-center mb-2 text-gray-400 text-xs font-medium">
                     <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
@@ -126,74 +114,142 @@
 
         <!-- Timer Tab -->
         <div id="timer" class="tab-content">
-            <div class="bg-white p-8 rounded-3xl shadow-sm text-center mb-6">
+            <div class="ios-card p-8 rounded-3xl shadow-sm text-center mb-6">
                 <div class="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-2">Pomodoro</div>
-                <div id="timer-display" class="text-7xl font-mono font-bold mb-8 text-gray-800">25:00</div>
+                <div id="timer-display" class="text-7xl font-mono font-bold mb-8" style="color: var(--text-main);">25:00</div>
                 <div class="flex justify-center gap-4">
                     <button id="timer-btn" onclick="toggleTimer()" class="bg-blue-500 text-white w-32 py-3 rounded-full font-semibold active:scale-95 transition-transform shadow-lg shadow-blue-200">Start</button>
-                    <button onclick="resetTimer()" class="bg-gray-100 text-gray-600 w-32 py-3 rounded-full font-semibold active:scale-95 transition-transform">Reset</button>
+                    <button onclick="resetTimer()" class="ios-card text-gray-600 w-32 py-3 rounded-full font-semibold active:scale-95 transition-transform">Reset</button>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
-                <button onclick="setTimer(25)" class="bg-white p-4 rounded-2xl shadow-sm text-sm font-medium text-gray-600 active:bg-gray-50">Focus (25m)</button>
-                <button onclick="setTimer(5)" class="bg-white p-4 rounded-2xl shadow-sm text-sm font-medium text-gray-600 active:bg-gray-50">Break (5m)</button>
+                <button onclick="setTimer(25)" class="ios-card p-4 rounded-2xl shadow-sm text-sm font-medium" style="color: var(--text-main);">Focus (25m)</button>
+                <button onclick="setTimer(5)" class="ios-card p-4 rounded-2xl shadow-sm text-sm font-medium" style="color: var(--text-main);">Break (5m)</button>
             </div>
         </div>
 
         <!-- Habits Tab -->
         <div id="habits" class="tab-content">
-            <div class="bg-white p-6 rounded-2xl shadow-sm mb-6">
-                <h2 class="text-lg font-semibold mb-4">Add New Habit</h2>
+            <div class="ios-card p-6 rounded-2xl shadow-sm mb-6">
+                <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Add New Habit</h2>
                 <div class="flex gap-2">
-                    <input type="text" id="habit-name" placeholder="e.g. Drink Water" class="flex-1 p-3 bg-gray-100 rounded-xl outline-none border border-transparent focus:border-blue-400 transition-all">
+                    <input type="text" id="habit-name" placeholder="e.g. Drink Water" class="flex-1 p-3 rounded-xl outline-none ios-input focus:ring-2 focus:ring-blue-400 transition-all">
                     <button onclick="addHabit()" class="bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold active:scale-95 transition-transform">Add</button>
                 </div>
             </div>
             <div id="habit-list" class="space-y-3"></div>
         </div>
 
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="ios-card p-6 rounded-2xl shadow-sm mb-6">
+                <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Appearance</h2>
+                <div class="flex justify-between items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                    <span style="color: var(--text-main);">Dark Mode</span>
+                    <button id="theme-toggle" onclick="toggleTheme()" class="w-12 h-6 rounded-full bg-gray-300 relative transition-colors">
+                        <div id="toggle-circle" class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all"></div>
+                    </button>
+                </div>
+            </div>
+            <div class="ios-card p-6 rounded-2xl shadow-sm">
+                <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Tab Order</h2>
+                <p class="text-xs text-gray-400 mb-4">Drag and drop not yet supported in PWA, please select order:</p>
+                <div id="tab-order-list" class="space-y-2"></div>
+                <button onclick="saveTabOrder()" class="w-full mt-4 bg-blue-500 text-white p-3 rounded-xl font-semibold active:scale-95 transition-transform">Apply Order</button>
+            </div>
+        </div>
+
     </main>
 
-    <nav class="fixed bottom-0 w-full bg-white/80 backdrop-blur-md border-t border-gray-200 safe-area-bottom">
-        <div class="flex justify-around items-center py-3">
-            <button onclick="switchTab('notes', 'Journal')" class="nav-item active flex flex-col items-center gap-1 transition-colors">
-                <i data-lucide="book-open" class="w-6 h-6"></i>
-                <span class="text-[10px] font-medium">Journal</span>
-            </button>
-            <button onclick="switchTab('homework', 'Homework')" class="nav-item flex flex-col items-center gap-1 transition-colors text-gray-400">
-                <i data-lucide="book" class="w-6 h-6"></i>
-                <span class="text-[10px] font-medium">Homework</span>
-            </button>
-            <button onclick="switchTab('calendar', 'Calendar')" class="nav-item flex flex-col items-center gap-1 transition-colors text-gray-400">
-                <i data-lucide="calendar" class="w-6 h-6"></i>
-                <span class="text-[10px] font-medium">Calendar</span>
-            </button>
-            <button onclick="switchTab('timer', 'Timer')" class="nav-item flex flex-col items-center gap-1 transition-colors text-gray-400">
-                <i data-lucide="timer" class="w-6 h-6"></i>
-                <span class="text-[10px] font-medium">Timer</span>
-            </button>
-            <button onclick="switchTab('habits', 'Habits')" class="nav-item flex flex-col items-center gap-1 transition-colors text-gray-400">
-                <i data-lucide="check-circle" class="w-6 h-6"></i>
-                <span class="text-[10px] font-medium">Habits</span>
-            </button>
+    <!-- Custom Event Modal -->
+    <div id="event-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-6 backdrop-blur-sm">
+        <div class="ios-card w-full max-w-xs p-6 rounded-3xl shadow-2xl">
+            <h2 class="text-xl font-bold mb-4" style="color: var(--text-main);">Add Event</h2>
+            <div class="space-y-3">
+                <input type="text" id="ev-title" placeholder="Event Title" class="w-full p-3 rounded-xl outline-none ios-input">
+                <input type="date" id="ev-date" class="w-full p-3 rounded-xl outline-none ios-input">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm" style="color: var(--text-main);">Color:</span>
+                    <input type="color" id="ev-color" value="#007aff" class="w-10 h-10 rounded-full bg-transparent cursor-pointer">
+                </div>
+                <div class="flex gap-2 mt-4">
+                    <button onclick="closeEventModal()" class="flex-1 p-3 rounded-xl font-semibold ios-input">Cancel</button>
+                    <button onclick="saveCustomEvent()" class="flex-1 p-3 rounded-xl font-semibold bg-blue-500 text-white">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-0 w-full bg-white/80 backdrop-blur-md border-t border-gray-200 safe-area-bottom" style="background-color: var(--card-color); border-color: var(--border-color);">
+        <div id="nav-container" class="flex justify-around items-center py-3">
+            <!-- Nav items will be injected here based on order -->
         </div>
     </nav>
 
     <script>
         lucide.createIcons();
 
-        // --- Data Management ---
+        // --- Configuration & State ---
         let homeworks = JSON.parse(localStorage.getItem('daily_homework')) || [];
         let habits = JSON.parse(localStorage.getItem('daily_habits')) || [];
         let notes = JSON.parse(localStorage.getItem('daily_notes')) || [];
+        let customEvents = JSON.parse(localStorage.getItem('daily_events')) || [];
+        let tabOrder = JSON.parse(localStorage.getItem('daily_tab_order')) || ['notes', 'homework', 'calendar', 'timer', 'habits', 'settings'];
+        let currentTheme = localStorage.getItem('daily_theme') || 'light';
+
+        const TAB_MAP = {
+            'notes': { title: 'Journal', icon: 'book-open' },
+            'homework': { title: 'Homework', icon: 'book' },
+            'calendar': { title: 'Calendar', icon: 'calendar' },
+            'timer': { title: 'Timer', icon: 'timer' },
+            'habits': { title: 'Habits', icon: 'check-circle' },
+            'settings': { title: 'Settings', icon: 'settings' }
+        };
 
         function saveToStorage() {
             localStorage.setItem('daily_homework', JSON.stringify(homeworks));
             localStorage.setItem('daily_habits', JSON.stringify(habits));
             localStorage.setItem('daily_notes', JSON.stringify(notes));
+            localStorage.setItem('daily_events', JSON.stringify(customEvents));
+            localStorage.setItem('daily_tab_order', JSON.stringify(tabOrder));
+            localStorage.setItem('daily_theme', currentTheme);
         }
 
-        // --- Tab Switching ---
+        // --- Theme Logic ---
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            applyTheme();
+            saveToStorage();
+        }
+
+        function applyTheme() {
+            if (currentTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('toggle-circle').style.left = '26px';
+                document.getElementById('theme-toggle').style.backgroundColor = '#2ecc71';
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.getElementById('toggle-circle').style.left = '4px';
+                document.getElementById('theme-toggle').style.backgroundColor = '#d1d1d6';
+            }
+        }
+
+        // --- Tab System ---
+        function renderNav() {
+            const container = document.getElementById('nav-container');
+            container.innerHTML = '';
+            tabOrder.forEach(tabId => {
+                const info = TAB_MAP[tabId];
+                container.innerHTML += `
+                    <button onclick="switchTab('${tabId}', '${info.title}')" id="nav-${tabId}" class="nav-item flex flex-col items-center gap-1 transition-colors text-gray-400">
+                        <i data-lucide="${info.icon}" class="w-6 h-6"></i>
+                        <span class="text-[10px] font-medium">${info.title}</span>
+                    </button>
+                `;
+            });
+            lucide.createIcons();
+        }
+
         function switchTab(tabId, title) {
             document.getElementById('page-title').innerText = title;
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -202,7 +258,7 @@
                 item.classList.remove('active');
                 item.classList.add('text-gray-400');
             });
-            const activeBtn = Array.from(document.querySelectorAll('.nav-item')).find(btn => btn.innerText.trim() === title);
+            const activeBtn = document.getElementById(`nav-${tabId}`);
             if (activeBtn) {
                 activeBtn.classList.add('active');
                 activeBtn.classList.remove('text-gray-400');
@@ -211,6 +267,199 @@
             if(tabId === 'homework') renderHomeworkList();
             if(tabId === 'habits') renderHabits();
             if(tabId === 'notes') renderNotes();
+            if(tabId === 'settings') renderSettingsOrder();
+        }
+
+        // --- Settings / Tab Order ---
+        function renderSettingsOrder() {
+            const list = document.getElementById('tab-order-list');
+            list.innerHTML = '';
+            tabOrder.forEach((tabId, index) => {
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-3 ios-card rounded-xl">
+                        <span style="color: var(--text-main);">${TAB_MAP[tabId].title}</span>
+                        <div class="flex gap-2">
+                            <button onclick="moveTab(${index}, -1)" class="p-1 bg-gray-200 dark:bg-gray-700 rounded text-xs">↑</button>
+                            <button onclick="moveTab(${index}, 1)" class="p-1 bg-gray-200 dark:bg-gray-700 rounded text-xs">↓</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function moveTab(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= tabOrder.length) return;
+            const temp = tabOrder[index];
+            tabOrder[index] = tabOrder[newIndex];
+            tabOrder[newIndex] = temp;
+            renderSettingsOrder();
+        }
+
+        function saveTabOrder() {
+            saveToStorage();
+            renderNav();
+            alert("Tab order saved!");
+        }
+
+        // --- Homework Logic ---
+        function addHomework() {
+            const subject = document.getElementById('hw-subject').value;
+            const task = document.getElementById('hw-task').value;
+            const date = document.getElementById('hw-date').value;
+            const type = document.getElementById('hw-type').value;
+            if(!subject || !task || !date) return alert("Please fill in all fields");
+            homeworks.push({ id: Date.now(), subject, task, date, type });
+            saveToStorage();
+            document.getElementById('hw-task').value = '';
+            document.getElementById('hw-date').value = '';
+            renderHomeworkList();
+        }
+        function deleteHomework(id) {
+            homeworks = homeworks.filter(hw => hw.id !== id);
+            saveToStorage();
+            renderHomeworkList();
+        }
+        function renderHomeworkList() {
+            const list = document.getElementById('hw-list');
+            list.innerHTML = '';
+            homeworks.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(hw => {
+                const color = hw.type === 'test' ? 'bg-red-500' : 'bg-blue-500';
+                list.innerHTML += `
+                    <div class="ios-card p-4 rounded-2xl shadow-sm flex items-center gap-4 animate-fadeIn">
+                        <div class="${color} w-2 h-10 rounded-full"></div>
+                        <div class="flex-1">
+                            <div class="font-bold" style="color: var(--text-main);">${hw.subject}</div>
+                            <div class="text-sm" style="color: var(--text-muted);">${hw.task}</div>
+                            <div class="text-[10px] text-gray-400">${hw.date}</div>
+                        </div>
+                        <button onclick="deleteHomework(${hw.id})" class="text-gray-300 hover:text-red-500 transition-colors">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        // --- Calendar Logic ---
+        function openEventModal() { document.getElementById('event-modal').classList.remove('hidden'); }
+        function closeEventModal() { document.getElementById('event-modal').classList.add('hidden'); }
+        function saveCustomEvent() {
+            const title = document.getElementById('ev-title').value;
+            const date = document.getElementById('ev-date').value;
+            const color = document.getElementById('ev-color').value;
+            if(!title || !date) return alert("Fill in title and date");
+            customEvents.push({ id: Date.now(), title, date, color });
+            saveToStorage();
+            closeEventModal();
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const daysContainer = document.getElementById('calendar-days');
+            const monthDisplay = document.getElementById('calendar-month');
+            daysContainer.innerHTML = '';
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            monthDisplay.innerText = `${monthNames[month]} ${year}`;
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (let i = 0; i < firstDay; i++) daysContainer.innerHTML += `<div></div>`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayHws = homeworks.filter(hw => hw.date === dateStr);
+                const dayEvs = customEvents.filter(ev => ev.date === dateStr);
+                let dots = '';
+                dayHws.forEach(hw => { dots += `<div class="dot ${hw.type === 'test' ? 'bg-red-500' : 'bg-blue-500'}"></div>`; });
+                dayEvs.forEach(ev => { dots += `<div class="dot" style="background-color: ${ev.color}"></div>`; });
+                daysContainer.innerHTML += `<div class="calendar-day ios-card" style="color: var(--text-main);">${day}<div class="dot-container">${dots}</div></div>`;
+            }
+        }
+
+        // --- Timer Logic ---
+        let timerInterval;
+        let timeLeft = 25 * 60;
+        let isTimerRunning = false;
+        function updateTimerDisplay() {
+            const mins = Math.floor(timeLeft / 60);
+            const secs = timeLeft % 60;
+            document.getElementById('timer-display').innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+        function toggleTimer() {
+            const btn = document.getElementById('timer-btn');
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                btn.innerText = 'Start';
+                btn.classList.replace('bg-red-500', 'bg-blue-500');
+            } else {
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    updateTimerDisplay();
+                    if (timeLeft <= 0) { clearInterval(timerInterval); alert("Time is up!"); resetTimer(); }
+                }, 1000);
+                btn.innerText = 'Pause';
+                btn.classList.replace('bg-blue-500', 'bg-red-500');
+            }
+            isTimerRunning = !isTimerRunning;
+        }
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timeLeft = 25 * 60;
+            updateTimerDisplay();
+            document.getElementById('timer-btn').innerText = 'Start';
+            document.getElementById('timer-btn').classList.replace('bg-red-500', 'bg-blue-500');
+        }
+        function setTimer(minutes) { resetTimer(); timeLeft = minutes * 60; updateTimerDisplay(); }
+
+        // --- Habits Logic ---
+        function addHabit() {
+            const name = document.getElementById('habit-name').value;
+            if (!name) return;
+            habits.push({ id: Date.now(), name, completedDates: [] });
+            saveToStorage();
+            document.getElementById('habit-name').value = '';
+            renderHabits();
+        }
+        function toggleHabit(id) {
+            const today = new Date().toISOString().split('T')[0];
+            const habit = habits.find(h => h.id === id);
+            const index = habit.completedDates.indexOf(today);
+            if (index > -1) habit.completedDates.splice(index, 1); else habit.completedDates.push(today);
+            saveToStorage();
+            renderHabits();
+        }
+        function deleteHabit(id) {
+            habits = habits.filter(h => h.id !== id);
+            saveToStorage();
+            renderHabits();
+        }
+        function renderHabits() {
+            const list = document.getElementById('habit-list');
+            list.innerHTML = '';
+            const today = new Date().toISOString().split('T')[0];
+            habits.forEach(habit => {
+                const isDone = habit.completedDates.includes(today);
+                const streak = habit.completedDates.length;
+                list.innerHTML += `
+                    <div class="ios-card p-4 rounded-2xl shadow-sm flex items-center gap-4 animate-fadeIn">
+                        <button onclick="toggleHabit(${habit.id})" class="w-8 h-8 rounded-full border-2 ${isDone ? 'bg-green-500 border-green-500' : 'border-gray-300'} flex items-center justify-center transition-colors">
+                            ${isDone ? '<i data-lucide="check" class="w-5 h-5 text-white"></i>' : ''}
+                        </button>
+                        <div class="flex-1">
+                            <div class="font-bold" style="color: var(--text-main); ${isDone ? 'line-through text-gray-400' : ''}">${habit.name}</div>
+                            <div class="text-[10px] text-gray-400">Streak: ${streak} days</div>
+                        </div>
+                        <button onclick="deleteHabit(${habit.id})" class="text-gray-300 hover:text-red-500 transition-colors">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
         }
 
         // --- Notes Logic ---
@@ -233,194 +482,25 @@
             list.innerHTML = '';
             notes.forEach(note => {
                 list.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm animate-fadeIn">
+                    <div class="ios-card p-4 rounded-2xl shadow-sm animate-fadeIn">
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-[10px] text-gray-400 font-medium">${note.date}</span>
                             <button onclick="deleteNote(${note.id})" class="text-gray-300 hover:text-red-500 transition-colors">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                         </div>
-                        <div class="text-sm text-gray-700 leading-relaxed">${note.text}</div>
+                        <div class="text-sm leading-relaxed" style="color: var(--text-main);">${note.text}</div>
                     </div>
                 `;
             });
             lucide.createIcons();
         }
 
-        // --- Homework Logic ---
-        function addHomework() {
-            const subject = document.getElementById('hw-subject').value;
-            const task = document.getElementById('hw-task').value;
-            const date = document.getElementById('hw-date').value;
-            const type = document.getElementById('hw-type').value;
-            if(!subject || !task || !date) return alert("Please fill in all fields");
-            homeworks.push({ id: Date.now(), subject, task, date, type });
-            saveToStorage();
-            document.getElementById('hw-subject').value = '';
-            document.getElementById('hw-task').value = '';
-            document.getElementById('hw-date').value = '';
-            renderHomeworkList();
-        }
-        function deleteHomework(id) {
-            homeworks = homeworks.filter(hw => hw.id !== id);
-            saveToStorage();
-            renderHomeworkList();
-        }
-        function renderHomeworkList() {
-            const list = document.getElementById('hw-list');
-            list.innerHTML = '';
-            homeworks.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(hw => {
-                const color = hw.type === 'test' ? 'bg-red-500' : 'bg-blue-500';
-                list.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-4 animate-fadeIn">
-                        <div class="${color} w-2 h-10 rounded-full"></div>
-                        <div class="flex-1">
-                            <div class="font-bold text-gray-800">${hw.subject}</div>
-                            <div class="text-sm text-gray-600">${hw.task}</div>
-                            <div class="text-[10px] text-gray-400">${hw.date}</div>
-                        </div>
-                        <button onclick="deleteHomework(${hw.id})" class="text-gray-300 hover:text-red-500 transition-colors">
-                            <i data-lucide="trash-2" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                `;
-            });
-            lucide.createIcons();
-        }
-
-        // --- Calendar Logic ---
-        function renderCalendar() {
-            const daysContainer = document.getElementById('calendar-days');
-            const monthDisplay = document.getElementById('calendar-month');
-            daysContainer.innerHTML = '';
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
-            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            monthDisplay.innerText = `${monthNames[month]} ${year}`;
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            for (let i = 0; i < firstDay; i++) daysContainer.innerHTML += `<div></div>`;
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const dayHws = homeworks.filter(hw => hw.date === dateStr);
-                let dots = '';
-                dayHws.forEach(hw => {
-                    const color = hw.type === 'test' ? 'bg-red-500' : 'bg-blue-500';
-                    dots += `<div class="dot ${color}"></div>`;
-                });
-                daysContainer.innerHTML += `<div class="calendar-day bg-gray-50 text-gray-700">${day}<div class="dot-container">${dots}</div></div>`;
-            }
-        }
-
-        // --- Timer Logic ---
-        let timerInterval;
-        let timeLeft = 25 * 60;
-        let isTimerRunning = false;
-
-        function updateTimerDisplay() {
-            const mins = Math.floor(timeLeft / 60);
-            const secs = timeLeft % 60;
-            document.getElementById('timer-display').innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-        }
-
-        function toggleTimer() {
-            const btn = document.getElementById('timer-btn');
-            if (isTimerRunning) {
-                clearInterval(timerInterval);
-                btn.innerText = 'Start';
-                btn.classList.replace('bg-red-500', 'bg-blue-500');
-            } else {
-                timerInterval = setInterval(() => {
-                    timeLeft--;
-                    updateTimerDisplay();
-                    if (timeLeft <= 0) {
-                        clearInterval(timerInterval);
-                        alert("Time is up!");
-                        resetTimer();
-                    }
-                }, 1000);
-                btn.innerText = 'Pause';
-                btn.classList.replace('bg-blue-500', 'bg-red-500');
-            }
-            isTimerRunning = !isTimerRunning;
-        }
-
-        function resetTimer() {
-            clearInterval(timerInterval);
-            isTimerRunning = false;
-            timeLeft = 25 * 60;
-            updateTimerDisplay();
-            document.getElementById('timer-btn').innerText = 'Start';
-            document.getElementById('timer-btn').classList.replace('bg-red-500', 'bg-blue-500');
-        }
-
-        function setTimer(minutes) {
-            resetTimer();
-            timeLeft = minutes * 60;
-            updateTimerDisplay();
-        }
-
-        // --- Habits Logic ---
-        function addHabit() {
-            const name = document.getElementById('habit-name').value;
-            if (!name) return;
-            const today = new Date().toISOString().split('T')[0];
-            habits.push({ id: Date.now(), name, completedDates: [] });
-            saveToStorage();
-            document.getElementById('habit-name').value = '';
-            renderHabits();
-        }
-
-        function toggleHabit(id) {
-            const today = new Date().toISOString().split('T')[0];
-            const habit = habits.find(h => h.id === id);
-            const index = habit.completedDates.indexOf(today);
-            if (index > -1) {
-                habit.completedDates.splice(index, 1);
-            } else {
-                habit.completedDates.push(today);
-            }
-            saveToStorage();
-            renderHabits();
-        }
-
-        function deleteHabit(id) {
-            habits = habits.filter(h => h.id !== id);
-            saveToStorage();
-            renderHabits();
-        }
-
-        function renderHabits() {
-            const list = document.getElementById('habit-list');
-            list.innerHTML = '';
-            const today = new Date().toISOString().split('T')[0];
-            
-            habits.forEach(habit => {
-                const isDone = habit.completedDates.includes(today);
-                const streak = habit.completedDates.length;
-                list.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-4 animate-fadeIn">
-                        <button onclick="toggleHabit(${habit.id})" class="w-8 h-8 rounded-full border-2 ${isDone ? 'bg-green-500 border-green-500' : 'border-gray-300'} flex items-center justify-center transition-colors">
-                            ${isDone ? '<i data-lucide="check" class="w-5 h-5 text-white"></i>' : ''}
-                        </button>
-                        <div class="flex-1">
-                            <div class="font-bold text-gray-800 ${isDone ? 'line-through text-gray-400' : ''}">${habit.name}</div>
-                            <div class="text-[10px] text-gray-400">Streak: ${streak} days</div>
-                        </div>
-                        <button onclick="deleteHabit(${habit.id})" class="text-gray-300 hover:text-red-500 transition-colors">
-                            <i data-lucide="trash-2" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                `;
-            });
-            lucide.createIcons();
-        }
-
-        // Initial render
-        renderHomeworkList();
+        // Initialize
+        applyTheme();
+        renderNav();
+        switchTab(tabOrder[0], TAB_MAP[tabOrder[0]].title);
         updateTimerDisplay();
-        renderNotes();
     </script>
 </body>
 </html>
