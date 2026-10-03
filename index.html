@@ -53,19 +53,19 @@
 
         /* iOS Floating Nav & Glassmorphism */
         .glass-nav {
-            background: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 0, 0, 0.8) !important;
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 5px solid yellow !important;
             border-radius: 999px;
             width: 92%;
             max-width: 400px;
             left: 50%;
             transform: translateX(-50%);
-            bottom: calc(12px + env(safe-area-inset-bottom));
+            bottom: 150px !important;
             height: 64px;
             position: fixed;
-            z-index: 100;
+            z-index: 9999;
         }
         body.dark-mode .glass-nav {
             background: rgba(28, 28, 30, 0.7);
