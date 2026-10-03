@@ -14,14 +14,6 @@
     
     <style>
         :root {
-            --bg-color: #f2f2f7;
-            --card-color: #ffffff;
-            --text-main: #1c1c1e;
-            --text-muted: #8e8e93;
-            --border-color: #d1d1d6;
-            --accent-color: #007aff;
-        }
-        body.dark-mode {
             --bg-color: #000000;
             --card-color: #1c1c1e;
             --text-main: #ffffff;
@@ -213,12 +205,10 @@
         <!-- Settings Tab -->
         <div id="settings" class="tab-content">
             <div class="ios-card p-6 rounded-2xl shadow-sm mb-6">
-                <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Appearance</h2>
+                <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">App Settings</h2>
                 <div class="flex justify-between items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
-                    <span style="color: var(--text-main);">Dark Mode</span>
-                    <button id="theme-toggle" onclick="toggleTheme()" class="w-12 h-6 rounded-full bg-gray-300 relative transition-colors">
-                        <div id="toggle-circle" class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all"></div>
-                    </button>
+                    <span style="color: var(--text-main);">Version</span>
+                    <span class="text-sm text-gray-400">v2.0 (Dark Mode Only)</span>
                 </div>
             </div>
             <div class="ios-card p-6 rounded-2xl shadow-sm">
@@ -302,16 +292,9 @@
         }
 
         function applyTheme() {
-            if (currentTheme === 'dark') {
-                document.body.classList.add('dark-mode');
-                document.getElementById('toggle-circle').style.left = '26px';
-                document.getElementById('theme-toggle').style.backgroundColor = '#2ecc71';
-            } else {
-                document.body.classList.remove('dark-mode');
-                document.getElementById('toggle-circle').style.left = '4px';
-                document.getElementById('theme-toggle').style.backgroundColor = '#d1d1d6';
-            }
+            document.body.classList.add('dark-mode');
         }
+
 
         // --- Tab System ---
         function renderNav() {
