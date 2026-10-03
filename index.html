@@ -62,7 +62,7 @@
             max-width: 400px;
             left: 50%;
             transform: translateX(-50%);
-            bottom: 24px;
+            bottom: calc(24px + env(safe-area-inset-bottom));
             height: 64px;
             position: fixed;
         }
