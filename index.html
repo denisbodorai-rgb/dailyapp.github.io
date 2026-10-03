@@ -45,11 +45,51 @@
         .nav-item.active { color: var(--accent-color); }
         .ios-card { background-color: var(--card-color); border: 1px solid var(--border-color); }
         .ios-input { background-color: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); }
-        
+
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
         .calendar-day { aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.8rem; position: relative; }
         .dot-container { display: flex; gap: 2px; justify-content: center; margin-top: 2px; flex-wrap: wrap; }
         .dot { width: 4px; height: 4px; border-radius: 50%; }
+
+        /* iOS Floating Nav & Glassmorphism */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 999px;
+            width: 92%;
+            max-width: 400px;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 24px;
+            height: 64px;
+        }
+        body.dark-mode .glass-nav {
+            background: rgba(28, 28, 30, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-item {
+            position: relative;
+            z-index: 1;
+            transition: color 0.3s ease;
+        }
+        .nav-circle {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            background: var(--accent-color);
+            opacity: 0;
+            border-radius: 50%;
+            z-index: -1;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scale(0);
+        }
+        .nav-item.active .nav-circle {
+            opacity: 0.15;
+            transform: scale(1);
+        }
+
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
@@ -175,6 +215,15 @@
                     <span class="text-sm" style="color: var(--text-main);">Color:</span>
                     <input type="color" id="ev-color" value="#007aff" class="w-10 h-10 rounded-full bg-transparent cursor-pointer">
                 </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm" style="color: var(--text-main);">Repeat:</span>
+                    <select id="ev-repeat" class="flex-1 p-3 rounded-xl outline-none ios-input">
+                        <option value="none">No Repeat</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
                 <div class="flex gap-2 mt-4">
                     <button onclick="closeEventModal()" class="flex-1 p-3 rounded-xl font-semibold ios-input">Cancel</button>
                     <button onclick="saveCustomEvent()" class="flex-1 p-3 rounded-xl font-semibold bg-blue-500 text-white">Save</button>
@@ -183,8 +232,8 @@
         </div>
     </div>
 
-    <nav class="fixed bottom-0 w-full bg-white/80 backdrop-blur-md border-t border-gray-200 safe-area-bottom" style="background-color: var(--card-color); border-color: var(--border-color);">
-        <div id="nav-container" class="flex justify-around items-center py-3">
+    <nav class="glass-nav fixed bottom-0 left-0 right-0 mx-auto flex items-center justify-center safe-area-bottom">
+        <div id="nav-container" class="flex justify-around items-center w-full px-2">
             <!-- Nav items will be injected here based on order -->
         </div>
     </nav>
@@ -245,6 +294,7 @@
                 const info = TAB_MAP[tabId];
                 container.innerHTML += `
                     <button onclick="switchTab('${tabId}', '${info.title}')" id="nav-${tabId}" class="nav-item flex flex-col items-center gap-1 transition-colors text-gray-400">
+                        <div class="nav-circle"></div>
                         <i data-lucide="${info.icon}" class="w-6 h-6"></i>
                         <span class="text-[10px] font-medium">${info.title}</span>
                     </button>
@@ -352,8 +402,9 @@
             const title = document.getElementById('ev-title').value;
             const date = document.getElementById('ev-date').value;
             const color = document.getElementById('ev-color').value;
+            const repeat = document.getElementById('ev-repeat').value;
             if(!title || !date) return alert("Fill in title and date");
-            customEvents.push({ id: Date.now(), title, date, color });
+            customEvents.push({ id: Date.now(), title, date, color, repeat });
             saveToStorage();
             closeEventModal();
             renderCalendar();
@@ -373,8 +424,24 @@
             for (let i = 0; i < firstDay; i++) daysContainer.innerHTML += `<div></div>`;
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const currentDayDate = new Date(year, month, day);
+
                 const dayHws = homeworks.filter(hw => hw.date === dateStr);
-                const dayEvs = customEvents.filter(ev => ev.date === dateStr);
+
+                const dayEvs = customEvents.filter(ev => {
+                    if (ev.date === dateStr) return true;
+                    if (ev.repeat === 'none') return false;
+
+                    const evDate = new Date(ev.date);
+                    if (evDate > currentDayDate) return false; // Event hasn't started yet
+
+                    if (ev.repeat === 'daily') return true;
+                    if (ev.repeat === 'weekly') return evDate.getDay() === currentDayDate.getDay();
+                    if (ev.repeat === 'monthly') return evDate.getDate() === currentDayDate.getDate();
+
+                    return false;
+                });
+
                 let dots = '';
                 dayHws.forEach(hw => { dots += `<div class="dot ${hw.type === 'test' ? 'bg-red-500' : 'bg-blue-500'}"></div>`; });
                 dayEvs.forEach(ev => { dots += `<div class="dot" style="background-color: ${ev.color}"></div>`; });
