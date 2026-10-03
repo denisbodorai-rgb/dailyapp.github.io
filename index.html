@@ -67,6 +67,13 @@
             position: fixed;
             z-index: 100;
         }
+
+        /* Extra lift for Home Screen "App" mode on iOS to prevent touching the bottom edge */
+        @media (display-mode: standalone) {
+            .glass-nav {
+                bottom: calc(48px + env(safe-area-inset-bottom)) !important;
+            }
+        }
         body.dark-mode .glass-nav {
             background: rgba(28, 28, 30, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.1);
