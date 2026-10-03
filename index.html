@@ -62,9 +62,10 @@
             max-width: 400px;
             left: 50%;
             transform: translateX(-50%);
-            bottom: calc(24px + env(safe-area-inset-bottom));
+            bottom: calc(32px + env(safe-area-inset-bottom));
             height: 64px;
             position: fixed;
+            z-index: 100;
         }
         body.dark-mode .glass-nav {
             background: rgba(28, 28, 30, 0.7);
