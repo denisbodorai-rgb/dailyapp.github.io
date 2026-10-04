@@ -440,9 +440,17 @@
         <div id="settings" class="tab-content">
             <div class="glass-card p-6 rounded-[var(--radius-lg)] mb-6">
                 <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">App Settings</h2>
-                <div class="flex justify-between items-center p-3 rounded-xl glass-input">
-                    <span style="color: var(--text-main);">Version</span>
-                    <span class="text-sm text-gray-400">v2.0 (Dark Mode Only)</span>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center p-3 rounded-xl glass-input">
+                        <span style="color: var(--text-main);">Version</span>
+                        <span class="text-sm text-gray-400">v2.0 (Dark Mode Only)</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 rounded-xl glass-input">
+                        <span style="color: var(--text-main);">Timer Notifications</span>
+                        <button id="notify-toggle" onclick="toggleNotifications()" class="w-12 h-6 rounded-full bg-gray-600 relative transition-colors duration-200">
+                            <div id="notify-knob" class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200"></div>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="glass-card p-6 rounded-[var(--radius-lg)]">
@@ -517,6 +525,7 @@
         let tabOrder = savedOrder ? savedOrder.filter(t => t !== 'timer') : ['notes', 'homework', 'calendar', 'habits'];
 
         let currentTheme = localStorage.getItem('daily_theme') || 'light';
+        let notificationsEnabled = localStorage.getItem('daily_notifications') === 'true';
 
         const TAB_MAP = {
             'today': { title: 'Today', icon: 'home' },
@@ -535,6 +544,10 @@
             'SJL': '#64d2ff', 'LIT': '#ffac41', 'TSV': '#a2a2a2'
         };
 
+        // Audio Alarm
+        const alarmAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        alarmAudio.loop = true;
+
         function saveToStorage() {
             localStorage.setItem('daily_homework', JSON.stringify(homeworks));
             localStorage.setItem('daily_habits', JSON.stringify(habits));
@@ -542,6 +555,7 @@
             localStorage.setItem('daily_events', JSON.stringify(customEvents));
             localStorage.setItem('daily_tab_order', JSON.stringify(tabOrder));
             localStorage.setItem('daily_theme', currentTheme);
+            localStorage.setItem('daily_notifications', notificationsEnabled);
         }
 
         function applyTheme() {
@@ -626,7 +640,7 @@
             }
         }
 
-        // --- Journal Logic (Notes) ---
+        // --- Journal Logic ---
         let activeNoteId = null;
         let saveTimeout = null;
 
@@ -811,7 +825,6 @@
                 const isToday = i === 0;
                 const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
                 const dayNum = date.getDate();
-
                 const tasks = homeworks.filter(hw => hw.date === dateStr);
                 const events = customEvents.filter(ev => {
                     if (ev.date === dateStr) return true;
@@ -823,16 +836,14 @@
                     if (ev.repeat === 'monthly') return evDate.getDate() === date.getDate();
                     return false;
                 });
-
                 let chips = '';
                 tasks.forEach(t => {
                     const col = SUBJECT_COLORS[t.subject] || '#a2a2a2';
-                    chips += `<div onclick="switchTab('homework', 'Homework')" class="text-[8px] px-1 rounded-sm text-white cursor-pointer" style="background-color: ${col}">${t.subject}</div>`;
+                    chips += `<div onclick="switchTab('homework', 'Homework')" class="text-[8px] px-1 rounded-sm text-white cursor-pointer mb-1" style="background-color: ${col}">${t.subject}</div>`;
                 });
                 events.forEach(e => {
-                    chips += `<div class="text-[8px] px-1 rounded-sm text-white cursor-pointer" style="background-color: ${e.color}">${e.title.substring(0,3)}</div>`;
+                    chips += `<div class="text-[8px] px-1 rounded-sm text-white cursor-pointer mb-1" style="background-color: ${e.color}">${e.title.substring(0,3)}</div>`;
                 });
-
                 strip.innerHTML += `
                     <div class="strip-column ${isToday ? 'text-blue-400 font-bold' : 'text-gray-400'}">
                         <div class="text-[10px] uppercase">${weekday}</div>
@@ -848,6 +859,27 @@
         let timerInterval;
         let timeLeft = 25 * 60;
         let isTimerRunning = false;
+
+        function triggerAlarm() {
+            // 1. Audio Alarm
+            alarmAudio.play().catch(e => console.log("Audio play blocked by browser"));
+
+            // 2. Haptic Vibration
+            if (navigator.vibrate) {
+                navigator.vibrate([500, 200, 500, 200, 500]);
+            }
+
+            // 3. System Notification
+            if (notificationsEnabled && Notification.permission === 'granted') {
+                new Notification("Pomodoro Timer", {
+                    body: isTimerRunning ? "Time to take a break!" : "Back to work!",
+                    icon: "https://cdn-icons-png.flaticon.com/512/2098/2098402.png"
+                });
+            } else {
+                alert("Time's up!");
+            }
+        }
+
         function updateTimerDisplay() {
             const mins = Math.floor(timeLeft / 60), secs = timeLeft % 60;
             document.getElementById('timer-display').innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
@@ -871,7 +903,11 @@
                 timerInterval = setInterval(() => {
                     timeLeft--;
                     updateTimerDisplay();
-                    if (timeLeft <= 0) { clearInterval(timerInterval); alert("Time is up!"); resetTimer(); }
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        triggerAlarm();
+                        resetTimer();
+                    }
                 }, 1000);
                 btn.innerText = 'Pause';
                 btn.classList.replace('bg-blue-500', 'bg-red-500');
@@ -980,6 +1016,33 @@
             renderSettingsOrder();
         }
 
+        function toggleNotifications() {
+            notificationsEnabled = !notificationsEnabled;
+            if (notificationsEnabled) {
+                Notification.requestPermission().then(permission => {
+                    if (permission !== 'granted') {
+                        notificationsEnabled = false;
+                        updateNotifyToggleUI();
+                        alert("Notification permission denied.");
+                    }
+                });
+            }
+            updateNotifyToggleUI();
+            saveToStorage();
+        }
+
+        function updateNotifyToggleUI() {
+            const knob = document.getElementById('notify-knob');
+            const toggle = document.getElementById('notify-toggle');
+            if (notificationsEnabled) {
+                knob.style.transform = 'translateX(24px)';
+                toggle.classList.replace('bg-gray-600', 'bg-blue-500');
+            } else {
+                knob.style.transform = 'translateX(0)';
+                toggle.classList.replace('bg-blue-500', 'bg-gray-600');
+            }
+        }
+
         function initDragAndDrop() {
             const items = document.querySelectorAll('.draggable-item');
             let draggedItem = null;
@@ -1040,7 +1103,7 @@
             renderNav();
             switchTab('today', TAB_MAP['today'].title);
             updateTimerDisplay();
-
+            updateNotifyToggleUI();
             document.getElementById('full-note-text').addEventListener('input', handleNoteEdit);
         };
     </script>
