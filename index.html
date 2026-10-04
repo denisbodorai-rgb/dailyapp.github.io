@@ -562,6 +562,7 @@
                 item.addEventListener('pointerdown', (e) => {
                     if (!e.target.closest('.drag-handle')) return;
 
+                    console.log('Drag started');
                     draggedItem = item;
                     startY = e.clientY;
                     currentY = e.clientY;
@@ -580,7 +581,6 @@
                     item.setPointerCapture(e.pointerId);
                     item.classList.add('dragging');
 
-                    // Optimization: Remove blur from list
                     document.querySelectorAll('.ios-card').forEach(card => card.classList.add('no-blur'));
                     document.body.style.overflow = 'hidden';
                     if (navigator.vibrate) navigator.vibrate(10);
@@ -594,14 +594,41 @@
                     rafId = requestAnimationFrame(updateDragPosition);
                 });
 
-                item.addEventListener('pointerup', (e) => {
+                const handleDrop = () => {
                     if (!draggedItem) return;
 
-                    // Finalize Order
-                    const finalOrder = [];
-                    const itemsNow = [...document.querySelectorAll('.draggable-item')];
-                    itemsNow.forEach(el => finalOrder.push(el.dataset.id));
-                    tabOrder = finalOrder;
+                    // Compute new index from final position
+                    const finalY = currentY;
+                    let newIndex = -1;
+
+                    // Use cached center positions to find where we landed
+                    // We need to consider that the draggedItem was removed from the logical flow
+                    // but cachedPositions contains all of them.
+
+                    // Find the item closest to the current pointer Y
+                    let closestId = null;
+                    let minDiff = Infinity;
+
+                    cachedPositions.forEach(pos => {
+                        const diff = Math.abs(finalY - pos.center);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            closestId = pos.id;
+                        }
+                    });
+
+                    const oldId = draggedItem.dataset.id;
+                    const oldIdx = tabOrder.indexOf(oldId);
+                    const newIdx = tabOrder.indexOf(closestId);
+
+                    if (newIdx !== -1 && newIdx !== oldIdx) {
+                        console.log(`Computed new index: ${newIdx}`);
+                        const newOrder = [...tabOrder];
+                        newOrder.splice(oldIdx, 1);
+                        newOrder.splice(newIdx, 0, oldId);
+                        tabOrder = newOrder;
+                        console.log('Saved order:', tabOrder);
+                    }
 
                     draggedItem.classList.remove('dragging');
                     draggedItem.style.transform = '';
@@ -616,7 +643,11 @@
 
                     draggedItem = null;
                     if (rafId) cancelAnimationFrame(rafId);
-                });
+                };
+
+                item.addEventListener('pointerup', handleDrop);
+                item.addEventListener('pointercancel', handleDrop);
+                item.addEventListener('lostpointercapture', handleDrop);
             });
 
             function updateDragPosition() {
@@ -625,32 +656,30 @@
                 const deltaY = currentY - startY;
                 draggedItem.style.transform = `translate3d(0, ${deltaY}px, 0) scale(1.03)`;
 
-                // Determine new index based on cached positions
-                let newIndex = -1;
+                // Visual shifting of siblings
                 const currentIdx = parseInt(draggedItem.dataset.index);
 
-                // Calculate based on center of items
-                const sorted = [...cachedPositions];
-                // Note: we're approximating movement since we don't re-render
-                // In a fully optimized a-frame, we shift others with transforms
-                // To keep this clean and match requirements:
-                const closest = sorted.find(pos => Math.abs(currentY - pos.center) < pos.height / 2);
+                // Find the current target index based on cached center positions
+                let targetIdx = currentIdx;
+                cachedPositions.forEach((pos, idx) => {
+                    if (pos.id === draggedItem.dataset.id) return;
+                    // If the pointer is above the center of an item, that item should shift down
+                    // If pointer is below, it should shift up
+                    // To simplify: if we are closer to this item's center than any other, it's the target
+                });
 
+                // Approximation for visual shift
+                const closest = cachedPositions.find(pos => Math.abs(currentY - pos.center) < pos.height / 2);
                 if (closest) {
-                    const targetIdx = sorted.findIndex(p => p.id === closest.id);
-                    if (targetIdx !== currentIdx) {
-                        // We don't re-render here, we just update the logic for the drop
-                        // But user wants a "gap" or shift.
-                        // To achieve this without re-render, we'd need to apply transforms to siblings.
-                        shiftSiblings(currentIdx, targetIdx);
-                    }
+                    const tIdx = cachedPositions.findIndex(p => p.id === closest.id);
+                    shiftSiblings(currentIdx, tIdx);
                 }
             }
 
             function shiftSiblings(from, to) {
                 const all = document.querySelectorAll('.draggable-item');
                 const height = cachedPositions[0]?.height || 50;
-                const gap = 8; // space-y-2
+                const gap = 8;
                 const step = height + gap;
 
                 all.forEach((el, idx) => {
