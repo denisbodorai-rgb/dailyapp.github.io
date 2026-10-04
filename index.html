@@ -132,11 +132,10 @@
             transform: scale(1.1);
         }
 
-        /* Optimized Drag and Drop Styles */
+        /* Simplified Drag and Drop Styles */
         .draggable-item {
-            transition: transform 0.15s cubic-bezier(0.2, 0, 0.2, 1);
+            transition: transform 0.2s ease;
             touch-action: none;
-            will-change: transform;
         }
         .dragging {
             transform: scale(1.03);
@@ -144,16 +143,10 @@
             z-index: 50;
             opacity: 0.9;
             transition: none !important;
-            will-change: transform;
         }
         .fixed-item {
             background-color: rgba(255, 255, 255, 0.03);
             cursor: not-allowed;
-        }
-        .no-blur {
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            background-color: rgba(28, 28, 30, 0.9) !important;
         }
         .drag-handle {
             touch-action: none;
@@ -549,39 +542,23 @@
             renderSettingsOrder();
         }
 
-        // Optimized Drag and Drop Logic
+        // Simplified Drag and Drop Logic
         function initDragAndDrop() {
             const items = document.querySelectorAll('.draggable-item');
             let draggedItem = null;
             let startY = 0;
             let currentY = 0;
-            let cachedPositions = [];
-            let rafId = null;
 
             items.forEach(item => {
                 item.addEventListener('pointerdown', (e) => {
                     if (!e.target.closest('.drag-handle')) return;
 
-                    console.log('Drag started');
                     draggedItem = item;
                     startY = e.clientY;
                     currentY = e.clientY;
 
-                    // Cache layout once
-                    cachedPositions = items.map(el => {
-                        const rect = el.getBoundingClientRect();
-                        return {
-                            id: el.dataset.id,
-                            top: rect.top,
-                            height: rect.height,
-                            center: rect.top + rect.height / 2
-                        };
-                    });
-
                     item.setPointerCapture(e.pointerId);
                     item.classList.add('dragging');
-
-                    document.querySelectorAll('.ios-card').forEach(card => card.classList.add('no-blur'));
                     document.body.style.overflow = 'hidden';
                     if (navigator.vibrate) navigator.vibrate(10);
                 });
@@ -589,51 +566,46 @@
                 item.addEventListener('pointermove', (e) => {
                     if (!draggedItem) return;
                     currentY = e.clientY;
+                    const deltaY = currentY - startY;
+                    draggedItem.style.transform = `translate3d(0, ${deltaY}px, 0) scale(1.03)`;
 
-                    if (rafId) cancelAnimationFrame(rafId);
-                    rafId = requestAnimationFrame(updateDragPosition);
+                    // Swap-on-Hover Logic
+                    const siblings = [...document.querySelectorAll('.draggable-item')];
+                    siblings.forEach(sib => {
+                        if (sib === draggedItem) return;
+                        const rect = sib.getBoundingClientRect();
+                        const center = rect.top + rect.height / 2;
+
+                        // If pointer crosses the center of another item
+                        if (Math.abs(currentY - center) < 10) {
+                            const draggedIdx = tabOrder.indexOf(draggedItem.dataset.id);
+                            const targetIdx = tabOrder.indexOf(sib.dataset.id);
+
+                            if (draggedIdx !== -1 && targetIdx !== -1 && draggedIdx !== targetIdx) {
+                                // Swap in array
+                                [tabOrder[draggedIdx], tabOrder[targetIdx]] = [tabOrder[targetIdx], tabOrder[draggedIdx]];
+
+                                // Re-render list instantly
+                                renderSettingsOrder();
+
+                                // Restore the dragging state on the new element
+                                const newDragged = document.querySelector(`[data-id="${tabOrder[targetIdx]}"]`); // This is wrong, we need the one we are moving
+                                // We need the element that is now at the position the user is holding
+                                const activeItem = document.querySelector(`[data-id="${draggedItem.dataset.id}"]`);
+                                activeItem.classList.add('dragging');
+                                activeItem.style.transform = `translate3d(0, ${deltaY}px, 0) scale(1.03)`;
+                                draggedItem = activeItem;
+                            }
+                        }
+                    });
                 });
 
                 const handleDrop = () => {
                     if (!draggedItem) return;
 
-                    // Compute new index from final position
-                    const finalY = currentY;
-                    let newIndex = -1;
-
-                    // Use cached center positions to find where we landed
-                    // We need to consider that the draggedItem was removed from the logical flow
-                    // but cachedPositions contains all of them.
-
-                    // Find the item closest to the current pointer Y
-                    let closestId = null;
-                    let minDiff = Infinity;
-
-                    cachedPositions.forEach(pos => {
-                        const diff = Math.abs(finalY - pos.center);
-                        if (diff < minDiff) {
-                            minDiff = diff;
-                            closestId = pos.id;
-                        }
-                    });
-
-                    const oldId = draggedItem.dataset.id;
-                    const oldIdx = tabOrder.indexOf(oldId);
-                    const newIdx = tabOrder.indexOf(closestId);
-
-                    if (newIdx !== -1 && newIdx !== oldIdx) {
-                        console.log(`Computed new index: ${newIdx}`);
-                        const newOrder = [...tabOrder];
-                        newOrder.splice(oldIdx, 1);
-                        newOrder.splice(newIdx, 0, oldId);
-                        tabOrder = newOrder;
-                        console.log('Saved order:', tabOrder);
-                    }
-
                     draggedItem.classList.remove('dragging');
                     draggedItem.style.transform = '';
                     document.body.style.overflow = '';
-                    document.querySelectorAll('.ios-card').forEach(card => card.classList.remove('no-blur'));
 
                     if (navigator.vibrate) navigator.vibrate(10);
 
@@ -642,57 +614,12 @@
                     renderSettingsOrder();
 
                     draggedItem = null;
-                    if (rafId) cancelAnimationFrame(rafId);
                 };
 
                 item.addEventListener('pointerup', handleDrop);
                 item.addEventListener('pointercancel', handleDrop);
                 item.addEventListener('lostpointercapture', handleDrop);
             });
-
-            function updateDragPosition() {
-                if (!draggedItem) return;
-
-                const deltaY = currentY - startY;
-                draggedItem.style.transform = `translate3d(0, ${deltaY}px, 0) scale(1.03)`;
-
-                // Visual shifting of siblings
-                const currentIdx = parseInt(draggedItem.dataset.index);
-
-                // Find the current target index based on cached center positions
-                let targetIdx = currentIdx;
-                cachedPositions.forEach((pos, idx) => {
-                    if (pos.id === draggedItem.dataset.id) return;
-                    // If the pointer is above the center of an item, that item should shift down
-                    // If pointer is below, it should shift up
-                    // To simplify: if we are closer to this item's center than any other, it's the target
-                });
-
-                // Approximation for visual shift
-                const closest = cachedPositions.find(pos => Math.abs(currentY - pos.center) < pos.height / 2);
-                if (closest) {
-                    const tIdx = cachedPositions.findIndex(p => p.id === closest.id);
-                    shiftSiblings(currentIdx, tIdx);
-                }
-            }
-
-            function shiftSiblings(from, to) {
-                const all = document.querySelectorAll('.draggable-item');
-                const height = cachedPositions[0]?.height || 50;
-                const gap = 8;
-                const step = height + gap;
-
-                all.forEach((el, idx) => {
-                    if (el === draggedItem) return;
-                    let offset = 0;
-                    if (from < to) {
-                        if (idx > from && idx <= to) offset = -step;
-                    } else {
-                        if (idx < from && idx >= to) offset = step;
-                    }
-                    el.style.transform = `translate3d(0, ${offset}px, 0)`;
-                });
-            }
         }
 
         // --- Homework Logic ---
