@@ -131,6 +131,22 @@
             height: 60px;
             transform: scale(1.1);
         }
+
+        /* Drag and Drop Styles */
+        .draggable-item {
+            transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1), box-shadow 0.2s ease;
+            touch-action: none;
+        }
+        .dragging {
+            transform: scale(1.03);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+            z-index: 50;
+            opacity: 0.9;
+        }
+        .fixed-item {
+            background-color: rgba(255, 255, 255, 0.03);
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
@@ -293,9 +309,9 @@
             </div>
             <div class="ios-card p-6 rounded-2xl shadow-sm">
                 <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Main Tab Order</h2>
-                <p class="text-xs text-gray-400 mb-4">Arrange your primary tools:</p>
-                <div id="tab-order-list" class="space-y-2"></div>
-                <button onclick="saveTabOrder()" class="w-full mt-4 bg-blue-500 text-white p-3 rounded-xl font-semibold active:scale-95 transition-transform">Apply Order</button>
+                <p class="text-xs text-gray-400 mb-4">Arrange your primary tools. Today is fixed in the center.</p>
+                <div id="tab-order-list" class="space-y-2 mb-6"></div>
+                <button onclick="resetTabOrder()" class="w-full bg-gray-700 text-white p-3 rounded-xl font-semibold active:scale-95 transition-transform text-sm">Reset to default</button>
             </div>
         </div>
 
@@ -343,7 +359,11 @@
         let habits = JSON.parse(localStorage.getItem('daily_habits')) || [];
         let notes = JSON.parse(localStorage.getItem('daily_notes')) || [];
         let customEvents = JSON.parse(localStorage.getItem('daily_events')) || [];
-        let tabOrder = JSON.parse(localStorage.getItem('daily_tab_order')) || ['notes', 'homework', 'calendar', 'timer', 'habits'];
+
+        // Migration: ensure no 'timer' and consistent format
+        let savedOrder = JSON.parse(localStorage.getItem('daily_tab_order'));
+        let tabOrder = savedOrder ? savedOrder.filter(t => t !== 'timer') : ['notes', 'homework', 'calendar', 'habits'];
+
         let currentTheme = localStorage.getItem('daily_theme') || 'light';
 
         const TAB_MAP = {
@@ -381,21 +401,18 @@
             const container = document.getElementById('nav-container');
             container.innerHTML = '';
 
-            // Filter out 'timer' from bottom nav, and 'today' since it's fixed
-            const navTabs = tabOrder.filter(tabId => tabId !== 'timer');
+            // Only tabs in tabOrder appear in nav (Today is center)
+            const navTabs = tabOrder;
 
-            // Split for Today center positioning
             const mid = Math.floor(navTabs.length / 2);
             const leftTabs = navTabs.slice(0, mid);
             const rightTabs = navTabs.slice(mid);
 
-            // Left Side
             leftTabs.forEach(tabId => {
                 const info = TAB_MAP[tabId];
                 container.innerHTML += createNavHtml(tabId, info);
             });
 
-            // Center Today
             const todayInfo = TAB_MAP['today'];
             container.innerHTML += `<button onclick="switchTab('today', '${todayInfo.title}')" id="nav-today" class="nav-item nav-home flex flex-col items-center gap-1 transition-colors text-gray-400">
                         <div class="nav-circle"></div>
@@ -403,7 +420,6 @@
                         <span class="text-[10px] font-medium">${todayInfo.title}</span>
                     </button>`;
 
-            // Right Side
             rightTabs.forEach(tabId => {
                 const info = TAB_MAP[tabId];
                 container.innerHTML += createNavHtml(tabId, info);
@@ -447,7 +463,6 @@
         function renderTodayDashboard() {
             const todayStr = new Date().toISOString().split('T')[0];
 
-            // Tasks
             const todayHws = homeworks.filter(hw => hw.date === todayStr);
             document.getElementById('today-tasks-count').innerText = `${todayHws.length} Due`;
 
@@ -463,15 +478,12 @@
                 document.getElementById('today-next-test').innerText = 'No upcoming tests';
             }
 
-            // Habits
             const doneHabits = habits.filter(h => h.completedDates.includes(todayStr)).length;
             document.getElementById('today-habits-progress').innerText = `${doneHabits}/${habits.length} done`;
 
-            // Journal
             const hasNoteToday = notes.some(n => n.date.includes(new Date().toLocaleDateString()));
             document.getElementById('today-journal-status').innerText = hasNoteToday ? 'Today\'s entry written' : 'Write today\'s note';
 
-            // Timer
             const timerStatus = document.getElementById('today-timer-status');
             if (isTimerRunning) {
                 const mins = Math.floor(timeLeft / 60);
@@ -482,36 +494,130 @@
             }
         }
 
-        // --- Settings / Tab Order ---
+        // --- Settings / Tab Order Logic ---
         function renderSettingsOrder() {
             const list = document.getElementById('tab-order-list');
             list.innerHTML = '';
-            tabOrder.forEach((tabId, index) => {
-                list.innerHTML += `
-                    <div class="flex items-center justify-between p-3 ios-card rounded-xl">
-                        <span style="color: var(--text-main);">${TAB_MAP[tabId].title}</span>
-                        <div class="flex gap-2">
-                            <button onclick="moveTab(${index}, -1)" class="p-1 bg-gray-200 dark:bg-gray-700 rounded text-xs">↑</button>
-                            <button onclick="moveTab(${index}, 1)" class="p-1 bg-gray-200 dark:bg-gray-700 rounded text-xs">↓</button>
-                        </div>
+
+            const mid = Math.floor(tabOrder.length / 2);
+
+            // Render Left
+            for(let i=0; i<mid; i++) {
+                list.innerHTML += createOrderRow(tabOrder[i], i);
+            }
+
+            // Render Today (Fixed)
+            list.innerHTML += `
+                <div class="flex items-center justify-between p-3 ios-card rounded-xl fixed-item opacity-60">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="lock" class="w-4 h-4 text-gray-500"></i>
+                        <span style="color: var(--text-main);">${TAB_MAP['today'].title}</span>
                     </div>
-                `;
-            });
+                    <span class="text-[10px] text-gray-500 font-bold uppercase">Fixed</span>
+                </div>
+            `;
+
+            // Render Right
+            for(let i=mid; i<tabOrder.length; i++) {
+                list.innerHTML += createOrderRow(tabOrder[i], i);
+            }
+
+            lucide.createIcons();
+            initDragAndDrop();
         }
 
-        function moveTab(index, direction) {
-            const newIndex = index + direction;
-            if (newIndex < 0 || newIndex >= tabOrder.length) return;
-            const temp = tabOrder[index];
-            tabOrder[index] = tabOrder[newIndex];
-            tabOrder[newIndex] = temp;
+        function createOrderRow(tabId, index) {
+            return `
+                <div class="draggable-item flex items-center justify-between p-3 ios-card rounded-xl cursor-pointer" data-id="${tabId}" data-index="${index}">
+                    <span style="color: var(--text-main);">${TAB_MAP[tabId].title}</span>
+                    <div class="text-gray-500">
+                        <i data-lucide="grip-vertical" class="w-5 h-5"></i>
+                    </div>
+                </div>
+            `;
+        }
+
+        function resetTabOrder() {
+            tabOrder = ['notes', 'homework', 'calendar', 'habits'];
+            saveToStorage();
+            renderNav();
             renderSettingsOrder();
         }
 
-        function saveTabOrder() {
-            saveToStorage();
-            renderNav();
-            alert("Tab order saved!");
+        // Drag and Drop Logic
+        function initDragAndDrop() {
+            const items = document.querySelectorAll('.draggable-item');
+            let draggedItem = null;
+            let startY = 0;
+            let currentY = 0;
+            let initialOrder = [];
+
+            items.forEach(item => {
+                item.addEventListener('pointerdown', (e) => {
+                    draggedItem = item;
+                    startY = e.clientY;
+                    currentY = e.clientY;
+                    initialOrder = [...tabOrder];
+
+                    item.setPointerCapture(e.pointerId);
+                    item.classList.add('dragging');
+                    document.body.style.overflow = 'hidden';
+                    if (navigator.vibrate) navigator.vibrate(10);
+                });
+
+                item.addEventListener('pointermove', (e) => {
+                    if (!draggedItem) return;
+                    currentY = e.clientY;
+                    const deltaY = currentY - startY;
+                    draggedItem.style.transform = `translateY(${deltaY}px) scale(1.03)`;
+
+                    // Find closest element to hover over
+                    const siblings = [...document.querySelectorAll('.draggable-item')];
+                    const closest = siblings.find(sib => {
+                        if (sib === draggedItem) return false;
+                        const box = sib.getBoundingClientRect();
+                        const centerY = box.top + box.height / 2;
+                        return Math.abs(currentY - centerY) < sib.offsetHeight / 2;
+                    });
+
+                    if (closest) {
+                        const draggedIdx = parseInt(draggedItem.dataset.index);
+                        const targetIdx = parseInt(closest.dataset.index);
+
+                        if (draggedIdx !== targetIdx) {
+                            // Swap in tabOrder
+                            const newOrder = [...tabOrder];
+                            const [movedItem] = newOrder.splice(draggedIdx, 1);
+                            newOrder.splice(targetIdx, 0, movedItem);
+
+                            tabOrder = newOrder;
+                            renderSettingsOrder(); // Re-render to update visual positions
+
+                            // Re-assign as current dragged item to maintain state
+                            const newDragged = document.querySelector(`[data-id="${movedItem}"]`);
+                            newDragged.classList.add('dragging');
+                            draggedItem = newDragged;
+                            draggedItem.style.transform = `translateY(${deltaY}px) scale(1.03)`;
+                        }
+                    }
+                });
+
+                item.addEventListener('pointerup', (e) => {
+                    if (!draggedItem) return;
+
+                    draggedItem.classList.remove('dragging');
+                    draggedItem.style.transform = '';
+                    document.body.style.overflow = '';
+
+                    if (navigator.vibrate) navigator.vibrate(10);
+
+                    saveToStorage();
+                    renderNav();
+                    renderSettingsOrder();
+
+                    draggedItem = null;
+                });
+            });
         }
 
         // --- Homework Logic ---
