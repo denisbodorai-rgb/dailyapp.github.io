@@ -861,15 +861,10 @@
         let isTimerRunning = false;
 
         function triggerAlarm() {
-            // 1. Audio Alarm
             alarmAudio.play().catch(e => console.log("Audio play blocked by browser"));
-
-            // 2. Haptic Vibration
             if (navigator.vibrate) {
                 navigator.vibrate([500, 200, 500, 200, 500]);
             }
-
-            // 3. System Notification
             if (notificationsEnabled && Notification.permission === 'granted') {
                 new Notification("Pomodoro Timer", {
                     body: isTimerRunning ? "Time to take a break!" : "Back to work!",
