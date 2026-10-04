@@ -149,7 +149,35 @@
             transform: scale(1.1);
         }
 
-        /* Component Specifics */
+        /* Journal Text Fixes */
+        .text-wrap-strict {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            min-width: 0;
+        }
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Fullscreen Note View */
+        .note-fullscreen {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: var(--bg-color);
+            display: none;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        /* Calendar Component Specifics */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
         .calendar-day {
             aspect-ratio: 1/1;
@@ -164,6 +192,27 @@
         .dot { width: 4px; height: 4px; border-radius: 50%; }
         .dot-container { display: flex; gap: 2px; justify-content: center; margin-top: 2px; flex-wrap: wrap; }
 
+        /* 7-Day Strip */
+        .day-strip {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 12px;
+            padding-bottom: 8px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .day-strip::-webkit-scrollbar { display: none; }
+        .strip-column {
+            flex: 0 0 100px;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* Timer Component */
         .timer-circle {
             position: relative;
             width: 240px;
@@ -216,6 +265,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
+        /* Drag and Drop Styles */
         .draggable-item {
             transition: transform 0.2s ease;
             touch-action: none;
@@ -231,6 +281,9 @@
         .fixed-item {
             background-color: rgba(255, 255, 255, 0.03);
             cursor: not-allowed;
+        }
+        .drag-handle {
+            touch-action: none;
         }
     </style>
 </head>
@@ -303,7 +356,7 @@
         <div id="notes" class="tab-content">
             <div class="glass-card p-6 rounded-[var(--radius-lg)] mb-6">
                 <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">New Entry</h2>
-                <textarea id="note-text" rows="3" placeholder="What's on your mind?" class="w-full p-3 rounded-xl outline-none glass-input focus:ring-2 focus:ring-blue-400 transition-all resize-none mb-3"></textarea>
+                <textarea id="note-text" rows="3" placeholder="What's on your mind?" class="w-full p-3 rounded-xl outline-none glass-input focus:ring-2 focus:ring-blue-400 transition-all resize-none mb-3 text-wrap-strict"></textarea>
                 <button onclick="addNote()" class="w-full glass-button glass-button-primary p-3 rounded-xl font-semibold active:scale-95 transition-transform">Save Note</button>
             </div>
             <div id="notes-list" class="space-y-3"></div>
@@ -314,13 +367,7 @@
             <div class="glass-card p-6 rounded-[var(--radius-lg)] mb-6">
                 <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Add New Task</h2>
                 <div class="space-y-3">
-                    <select id="hw-subject" class="w-full p-3 rounded-xl outline-none glass-input focus:ring-2 focus:ring-blue-400 transition-all">
-                        <option value="" disabled selected>Select Subject</option>
-                        <option value="ANJ">ANJ</option><option value="RUJ">RUJ</option><option value="DEJ">DEJ</option>
-                        <option value="FYZ">FYZ</option><option value="GEO">GEO</option><option value="CHE">CHE</option>
-                        <option value="INF">INF</option><option value="MAT">MAT</option><option value="OBN">OBN</option>
-                        <option value="SJL">SJL</option><option value="LIT">LIT</option><option value="TSV">TSV</option>
-                    </select>
+                    <select id="hw-subject" class="w-full p-3 rounded-xl outline-none glass-input focus:ring-2 focus:ring-blue-400 transition-all"></select>
                     <input type="text" id="hw-task" placeholder="What needs to be done?" class="w-full p-3 rounded-xl outline-none glass-input focus:ring-2 focus:ring-blue-400 transition-all">
                     <div class="flex gap-2">
                         <input type="date" id="hw-date" class="flex-1 p-3 rounded-xl outline-none glass-input focus:ring-2 focus:ring-blue-400 transition-all">
@@ -337,7 +384,7 @@
 
         <!-- Calendar Tab -->
         <div id="calendar" class="tab-content">
-            <div class="glass-card p-6 rounded-[var(--radius-lg)]">
+            <div class="glass-card p-6 rounded-[var(--radius-lg)] mb-6">
                 <div class="flex justify-between items-center mb-6">
                     <h2 id="calendar-month" class="text-lg font-bold" style="color: var(--text-main);">Month Year</h2>
                     <button onclick="openEventModal()" class="glass-button glass-button-primary p-2 rounded-full active:scale-90 transition-transform">
@@ -348,6 +395,10 @@
                     <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
                 </div>
                 <div id="calendar-days" class="calendar-grid"></div>
+            </div>
+            <div class="glass-card p-6 rounded-[var(--radius-lg)]">
+                <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Next 7 days</h2>
+                <div id="day-strip" class="day-strip"></div>
             </div>
         </div>
 
@@ -403,6 +454,22 @@
         </div>
 
     </main>
+
+    <!-- Fullscreen Note View -->
+    <div id="note-fullscreen" class="note-fullscreen p-6">
+        <div class="flex items-center gap-4 mb-6 pt-8">
+            <button onclick="closeNote()" class="p-2 rounded-full glass-button active:scale-90 transition-transform">
+                <i data-lucide="chevron-left" class="w-6 h-6"></i>
+            </button>
+            <div class="flex-1">
+                <div id="full-note-date" class="text-xs text-gray-400 font-medium"></div>
+            </div>
+            <button onclick="confirmDeleteNote()" class="p-2 rounded-full glass-button text-red-400 active:scale-90 transition-transform">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <textarea id="full-note-text" class="w-full flex-1 bg-transparent outline-none text-lg leading-relaxed text-wrap-strict resize-none" style="height: 70vh;"></textarea>
+    </div>
 
     <!-- Custom Event Modal -->
     <div id="event-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-6 backdrop-blur-md">
@@ -493,14 +560,12 @@
                 const info = TAB_MAP[tabId];
                 container.innerHTML += createNavHtml(tabId, info);
             });
-
             const todayInfo = TAB_MAP['today'];
             container.innerHTML += `<button onclick="switchTab('today', '${todayInfo.title}')" id="nav-today" class="nav-item nav-home flex flex-col items-center gap-1 transition-colors text-gray-400">
                         <div class="nav-circle"></div>
                         <i data-lucide="${todayInfo.icon}" class="w-7 h-7"></i>
                         <span class="text-[10px] font-medium">${todayInfo.title}</span>
                     </button>`;
-
             rightTabs.forEach(tabId => {
                 const info = TAB_MAP[tabId];
                 container.innerHTML += createNavHtml(tabId, info);
@@ -509,13 +574,11 @@
         }
 
         function createNavHtml(tabId, info) {
-            return `
-                <button onclick="switchTab('${tabId}', '${info.title}')" id="nav-${tabId}" class="nav-item flex flex-col items-center gap-1 transition-colors text-gray-400">
+            return `<button onclick="switchTab('${tabId}', '${info.title}')" id="nav-${tabId}" class="nav-item flex flex-col items-center gap-1 transition-colors text-gray-400">
                     <div class="nav-circle"></div>
                     <i data-lucide="${info.icon}" class="w-6 h-6"></i>
                     <span class="text-[10px] font-medium">${info.title}</span>
-                </button>
-            `;
+                </button>`;
         }
 
         function switchTab(tabId, title) {
@@ -563,6 +626,329 @@
             }
         }
 
+        // --- Journal Logic (Notes) ---
+        let activeNoteId = null;
+        let saveTimeout = null;
+
+        function addNote() {
+            const text = document.getElementById('note-text').value;
+            if (!text) return;
+            const date = new Date().toLocaleString();
+            notes.unshift({ id: Date.now(), text, date });
+            saveToStorage();
+            document.getElementById('note-text').value = '';
+            renderNotes();
+        }
+        function deleteNote(id, event) {
+            if (event) event.stopPropagation();
+            if (confirm("Delete this note?")) {
+                notes = notes.filter(n => n.id !== id);
+                saveToStorage();
+                if (activeNoteId === id) closeNote();
+                renderNotes();
+            }
+        }
+        function openNote(id) {
+            const note = notes.find(n => n.id === id);
+            if (!note) return;
+            activeNoteId = id;
+            document.getElementById('full-note-date').innerText = note.date;
+            document.getElementById('full-note-text').value = note.text;
+            document.getElementById('note-fullscreen').style.display = 'flex';
+            lucide.createIcons();
+        }
+        function closeNote() {
+            document.getElementById('note-fullscreen').style.display = 'none';
+            activeNoteId = null;
+        }
+        function handleNoteEdit(e) {
+            const text = e.target.value;
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                const note = notes.find(n => n.id === activeNoteId);
+                if (note) {
+                    note.text = text;
+                    saveToStorage();
+                    renderNotes();
+                }
+            }, 500);
+        }
+        function confirmDeleteNote() {
+            if (confirm("Delete this note?")) {
+                deleteNote(activeNoteId);
+                closeNote();
+            }
+        }
+        function renderNotes() {
+            const list = document.getElementById('notes-list');
+            list.innerHTML = '';
+            notes.forEach(note => {
+                list.innerHTML += `
+                    <div onclick="openNote(${note.id})" class="glass-card p-4 rounded-[var(--radius-md)] animate-fadeIn cursor-pointer relative">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-[10px] text-gray-400 font-medium">${note.date}</span>
+                            <button onclick="deleteNote(${note.id}, event)" class="text-gray-300 hover:text-red-500 transition-colors p-1">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div class="text-sm leading-relaxed text-wrap-strict line-clamp-3" style="color: var(--text-main);">${note.text}</div>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        // --- Homework Logic ---
+        function populateSubjectPicker() {
+            const picker = document.getElementById('hw-subject');
+            picker.innerHTML = '<option value="" disabled selected>Select Subject</option>';
+            Object.keys(SUBJECT_COLORS).forEach(sub => {
+                picker.innerHTML += `<option value="${sub}">${sub}</option>`;
+            });
+        }
+        function addHomework() {
+            const subject = document.getElementById('hw-subject').value;
+            const task = document.getElementById('hw-task').value;
+            const date = document.getElementById('hw-date').value;
+            const type = document.getElementById('hw-type').value;
+            if(!subject || !task || !date) return alert("Please fill in all fields");
+            homeworks.push({ id: Date.now(), subject, task, date, type });
+            saveToStorage();
+            document.getElementById('hw-task').value = '';
+            document.getElementById('hw-date').value = '';
+            renderHomeworkList();
+        }
+        function deleteHomework(id) {
+            homeworks = homeworks.filter(hw => hw.id !== id);
+            saveToStorage();
+            renderHomeworkList();
+        }
+        function renderHomeworkList() {
+            const list = document.getElementById('hw-list');
+            list.innerHTML = '';
+            homeworks.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(hw => {
+                const color = SUBJECT_COLORS[hw.subject] || '#a2a2a2';
+                const isTest = hw.type === 'test';
+                list.innerHTML += `
+                    <div class="glass-card p-4 rounded-[var(--radius-md)] flex items-center gap-4 animate-fadeIn ${isTest ? 'border-l-4 border-l-red-500' : ''}">
+                        <div class="w-2 h-10 rounded-full" style="background-color: ${color}"></div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-bold flex items-center gap-2" style="color: var(--text-main);">
+                                ${hw.subject} ${isTest ? '<span class="bg-red-500 text-white text-[10px] px-1 rounded font-black uppercase">Test</span>' : ''}
+                            </div>
+                            <div class="text-sm text-wrap-strict truncate" style="color: var(--text-muted);">${hw.task}</div>
+                            <div class="text-[10px] text-gray-400">${hw.date}</div>
+                        </div>
+                        <button onclick="deleteHomework(${hw.id})" class="text-gray-300 hover:text-red-500 transition-colors">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        // --- Calendar Logic ---
+        function openEventModal() { document.getElementById('event-modal').classList.remove('hidden'); }
+        function closeEventModal() { document.getElementById('event-modal').classList.add('hidden'); }
+        function saveCustomEvent() {
+            const title = document.getElementById('ev-title').value;
+            const date = document.getElementById('ev-date').value;
+            const color = document.getElementById('ev-color').value;
+            const repeat = document.getElementById('ev-repeat').value;
+            if(!title || !date) return alert("Fill in title and date");
+            customEvents.push({ id: Date.now(), title, date, color, repeat });
+            saveToStorage();
+            closeEventModal();
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const daysContainer = document.getElementById('calendar-days');
+            const monthDisplay = document.getElementById('calendar-month');
+            daysContainer.innerHTML = '';
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            monthDisplay.innerText = `${monthNames[month]} ${year}`;
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (let i = 0; i < firstDay; i++) daysContainer.innerHTML += `<div></div>`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = dateStr === new Date().toISOString().split('T')[0];
+                const dayHws = homeworks.filter(hw => hw.date === dateStr);
+                const dayEvs = customEvents.filter(ev => {
+                    if (ev.date === dateStr) return true;
+                    if (ev.repeat === 'none') return false;
+                    const evDate = new Date(ev.date);
+                    if (evDate > new Date(year, month, day)) return false;
+                    if (ev.repeat === 'daily') return true;
+                    if (ev.repeat === 'weekly') return evDate.getDay() === new Date(year, month, day).getDay();
+                    if (ev.repeat === 'monthly') return evDate.getDate() === day;
+                    return false;
+                });
+                let dots = '';
+                dayHws.forEach(hw => dots += `<div class="dot ${hw.type === 'test' ? 'bg-red-500' : 'bg-blue-500'}"></div>`);
+                dayEvs.forEach(ev => dots += `<div class="dot" style="background-color: ${ev.color}"></div>`);
+                daysContainer.innerHTML += `
+                    <div class="calendar-day glass-card ${isToday ? 'border-blue-500 ring-1 ring-blue-500' : ''}" style="color: var(--text-main);">
+                        ${day}<div class="dot-container">${dots}</div>
+                    </div>`;
+            }
+            renderDayStrip();
+        }
+
+        function renderDayStrip() {
+            const strip = document.getElementById('day-strip');
+            strip.innerHTML = '';
+            const now = new Date();
+            for (let i = 0; i < 7; i++) {
+                const date = new Date();
+                date.setDate(now.getDate() + i);
+                const dateStr = date.toISOString().split('T')[0];
+                const isToday = i === 0;
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+                const dayNum = date.getDate();
+
+                const tasks = homeworks.filter(hw => hw.date === dateStr);
+                const events = customEvents.filter(ev => {
+                    if (ev.date === dateStr) return true;
+                    if (ev.repeat === 'none') return false;
+                    const evDate = new Date(ev.date);
+                    if (evDate > date) return false;
+                    if (ev.repeat === 'daily') return true;
+                    if (ev.repeat === 'weekly') return evDate.getDay() === date.getDay();
+                    if (ev.repeat === 'monthly') return evDate.getDate() === date.getDate();
+                    return false;
+                });
+
+                let chips = '';
+                tasks.forEach(t => {
+                    const col = SUBJECT_COLORS[t.subject] || '#a2a2a2';
+                    chips += `<div onclick="switchTab('homework', 'Homework')" class="text-[8px] px-1 rounded-sm text-white cursor-pointer" style="background-color: ${col}">${t.subject}</div>`;
+                });
+                events.forEach(e => {
+                    chips += `<div class="text-[8px] px-1 rounded-sm text-white cursor-pointer" style="background-color: ${e.color}">${e.title.substring(0,3)}</div>`;
+                });
+
+                strip.innerHTML += `
+                    <div class="strip-column ${isToday ? 'text-blue-400 font-bold' : 'text-gray-400'}">
+                        <div class="text-[10px] uppercase">${weekday}</div>
+                        <div class="text-lg font-bold mb-2">${dayNum}</div>
+                        <div class="flex flex-col gap-1 w-full items-center">
+                            ${chips || '<div class="text-[8px] opacity-50">Nothing</div>'}
+                        </div>
+                    </div>`;
+            }
+        }
+
+        // --- Timer Logic ---
+        let timerInterval;
+        let timeLeft = 25 * 60;
+        let isTimerRunning = false;
+        function updateTimerDisplay() {
+            const mins = Math.floor(timeLeft / 60), secs = timeLeft % 60;
+            document.getElementById('timer-display').innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            const ring = document.getElementById('timer-progress-ring');
+            if (ring) {
+                const total = 25 * 60;
+                const offset = 691 - (691 * (timeLeft / total));
+                ring.style.strokeDashoffset = offset;
+            }
+            if (document.getElementById('today') && document.getElementById('today').classList.contains('active')) {
+                renderTodayDashboard();
+            }
+        }
+        function toggleTimer() {
+            const btn = document.getElementById('timer-btn');
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                btn.innerText = 'Start';
+                btn.classList.replace('bg-red-500', 'bg-blue-500');
+            } else {
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    updateTimerDisplay();
+                    if (timeLeft <= 0) { clearInterval(timerInterval); alert("Time is up!"); resetTimer(); }
+                }, 1000);
+                btn.innerText = 'Pause';
+                btn.classList.replace('bg-blue-500', 'bg-red-500');
+            }
+            isTimerRunning = !isTimerRunning;
+        }
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timeLeft = 25 * 60;
+            updateTimerDisplay();
+            document.getElementById('timer-btn').innerText = 'Start';
+            document.getElementById('timer-btn').classList.replace('bg-red-500', 'bg-blue-500');
+            document.getElementById('seg-focus').classList.add('active');
+            document.getElementById('seg-break').classList.remove('active');
+        }
+        function setTimer(minutes) {
+            resetTimer();
+            timeLeft = minutes * 60;
+            updateTimerDisplay();
+            if (minutes === 25) {
+                document.getElementById('seg-focus').classList.add('active');
+                document.getElementById('seg-break').classList.remove('active');
+            } else {
+                document.getElementById('seg-focus').classList.remove('active');
+                document.getElementById('seg-break').classList.add('active');
+            }
+        }
+
+        // --- Habits Logic ---
+        function addHabit() {
+            const name = document.getElementById('habit-name').value;
+            if (!name) return;
+            habits.push({ id: Date.now(), name, completedDates: [] });
+            saveToStorage();
+            document.getElementById('habit-name').value = '';
+            renderHabits();
+        }
+        function toggleHabit(id) {
+            const today = new Date().toISOString().split('T')[0];
+            const habit = habits.find(h => h.id === id);
+            const index = habit.completedDates.indexOf(today);
+            if (index > -1) habit.completedDates.splice(index, 1); else habit.completedDates.push(today);
+            saveToStorage();
+            renderHabits();
+        }
+        function deleteHabit(id) {
+            habits = habits.filter(h => h.id !== id);
+            saveToStorage();
+            renderHabits();
+        }
+        function renderHabits() {
+            const list = document.getElementById('habit-list');
+            list.innerHTML = '';
+            const today = new Date().toISOString().split('T')[0];
+            habits.forEach(habit => {
+                const isDone = habit.completedDates.includes(today);
+                const streak = habit.completedDates.length;
+                list.innerHTML += `
+                    <div class="glass-card p-4 rounded-[var(--radius-md)] flex items-center gap-4 animate-fadeIn">
+                        <button onclick="toggleHabit(${habit.id})" class="w-8 h-8 rounded-full border-2 ${isDone ? 'bg-green-500 border-green-500' : 'border-gray-300'} flex items-center justify-center transition-colors">
+                            ${isDone ? '<i data-lucide="check" class="w-5 h-5 text-white"></i>' : ''}
+                        </button>
+                        <div class="flex-1">
+                            <div class="font-bold" style="color: var(--text-main); ${isDone ? 'line-through text-gray-400' : ''}">${habit.name}</div>
+                            <div class="text-[10px] text-gray-400">Streak: ${streak} days</div>
+                        </div>
+                        <button onclick="deleteHabit(${habit.id})" class="text-gray-300 hover:text-red-500 transition-colors">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        // --- Settings / Tab Order Logic ---
         function renderSettingsOrder() {
             const list = document.getElementById('tab-order-list');
             list.innerHTML = '';
@@ -647,235 +1033,16 @@
             });
         }
 
-        function addHomework() {
-            const subject = document.getElementById('hw-subject').value;
-            const task = document.getElementById('hw-task').value;
-            const date = document.getElementById('hw-date').value;
-            const type = document.getElementById('hw-type').value;
-            if(!subject || !task || !date) return alert("Please fill in all fields");
-            homeworks.push({ id: Date.now(), subject, task, date, type });
-            saveToStorage();
-            document.getElementById('hw-task').value = '';
-            document.getElementById('hw-date').value = '';
-            renderHomeworkList();
-        }
-        function deleteHomework(id) {
-            homeworks = homeworks.filter(hw => hw.id !== id);
-            saveToStorage();
-            renderHomeworkList();
-        }
-        function renderHomeworkList() {
-            const list = document.getElementById('hw-list');
-            list.innerHTML = '';
-            homeworks.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(hw => {
-                const color = SUBJECT_COLORS[hw.subject] || '#a2a2a2';
-                const isTest = hw.type === 'test';
-                list.innerHTML += `
-                    <div class="glass-card p-4 rounded-[var(--radius-md)] flex items-center gap-4 animate-fadeIn ${isTest ? 'border-l-4 border-l-red-500' : ''}">
-                        <div class="w-2 h-10 rounded-full" style="background-color: ${color}"></div>
-                        <div class="flex-1">
-                            <div class="font-bold" style="color: var(--text-main);">${hw.subject} ${isTest ? '<span class="text-red-500 text-xs ml-2 uppercase font-black">Test</span>' : ''}</div>
-                            <div class="text-sm" style="color: var(--text-muted);">${hw.task}</div>
-                            <div class="text-[10px] text-gray-400">${hw.date}</div>
-                        </div>
-                        <button onclick="deleteHomework(${hw.id})" class="text-gray-300 hover:text-red-500 transition-colors">
-                            <i data-lucide="trash-2" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                `;
-            });
-            lucide.createIcons();
-        }
-
-        function openEventModal() { document.getElementById('event-modal').classList.remove('hidden'); }
-        function closeEventModal() { document.getElementById('event-modal').classList.add('hidden'); }
-        function saveCustomEvent() {
-            const title = document.getElementById('ev-title').value;
-            const date = document.getElementById('ev-date').value;
-            const color = document.getElementById('ev-color').value;
-            const repeat = document.getElementById('ev-repeat').value;
-            if(!title || !date) return alert("Fill in title and date");
-            customEvents.push({ id: Date.now(), title, date, color, repeat });
-            saveToStorage();
-            closeEventModal();
-            renderCalendar();
-        }
-
-        function renderCalendar() {
-            const daysContainer = document.getElementById('calendar-days');
-            const monthDisplay = document.getElementById('calendar-month');
-            daysContainer.innerHTML = '';
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
-            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            monthDisplay.innerText = `${monthNames[month]} ${year}`;
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            for (let i = 0; i < firstDay; i++) daysContainer.innerHTML += `<div></div>`;
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const isToday = dateStr === new Date().toISOString().split('T')[0];
-                const dayHws = homeworks.filter(hw => hw.date === dateStr);
-                const dayEvs = customEvents.filter(ev => {
-                    if (ev.date === dateStr) return true;
-                    if (ev.repeat === 'none') return false;
-                    const evDate = new Date(ev.date);
-                    if (evDate > new Date(year, month, day)) return false;
-                    if (ev.repeat === 'daily') return true;
-                    if (ev.repeat === 'weekly') return evDate.getDay() === new Date(year, month, day).getDay();
-                    if (ev.repeat === 'monthly') return evDate.getDate() === day;
-                    return false;
-                });
-                let dots = '';
-                dayHws.forEach(hw => dots += `<div class="dot ${hw.type === 'test' ? 'bg-red-500' : 'bg-blue-500'}"></div>`);
-                dayEvs.forEach(ev => dots += `<div class="dot" style="background-color: ${ev.color}"></div>`);
-                daysContainer.innerHTML += `
-                    <div class="calendar-day glass-card ${isToday ? 'border-blue-500 ring-1 ring-blue-500' : ''}" style="color: var(--text-main);">
-                        ${day}<div class="dot-container">${dots}</div>
-                    </div>`;
-            }
-        }
-
-        let timerInterval;
-        let timeLeft = 25 * 60;
-        let isTimerRunning = false;
-        function updateTimerDisplay() {
-            const mins = Math.floor(timeLeft / 60), secs = timeLeft % 60;
-            document.getElementById('timer-display').innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-            const ring = document.getElementById('timer-progress-ring');
-            if (ring) {
-                const total = 25 * 60;
-                const offset = 691 - (691 * (timeLeft / total));
-                ring.style.strokeDashoffset = offset;
-            }
-            if (document.getElementById('today') && document.getElementById('today').classList.contains('active')) {
-                renderTodayDashboard();
-            }
-        }
-        function toggleTimer() {
-            const btn = document.getElementById('timer-btn');
-            if (isTimerRunning) {
-                clearInterval(timerInterval);
-                btn.innerText = 'Start';
-                btn.classList.replace('bg-red-500', 'bg-blue-500');
-            } else {
-                timerInterval = setInterval(() => {
-                    timeLeft--;
-                    updateTimerDisplay();
-                    if (timeLeft <= 0) { clearInterval(timerInterval); alert("Time is up!"); resetTimer(); }
-                }, 1000);
-                btn.innerText = 'Pause';
-                btn.classList.replace('bg-blue-500', 'bg-red-500');
-            }
-            isTimerRunning = !isTimerRunning;
-        }
-        function resetTimer() {
-            clearInterval(timerInterval);
-            isTimerRunning = false;
-            timeLeft = 25 * 60;
+        // Initialize
+        window.onload = () => {
+            populateSubjectPicker();
+            applyTheme();
+            renderNav();
+            switchTab('today', TAB_MAP['today'].title);
             updateTimerDisplay();
-            document.getElementById('timer-btn').innerText = 'Start';
-            document.getElementById('timer-btn').classList.replace('bg-red-500', 'bg-blue-500');
-            document.getElementById('seg-focus').classList.add('active');
-            document.getElementById('seg-break').classList.remove('active');
-        }
-        function setTimer(minutes) {
-            resetTimer();
-            timeLeft = minutes * 60;
-            updateTimerDisplay();
-            if (minutes === 25) {
-                document.getElementById('seg-focus').classList.add('active');
-                document.getElementById('seg-break').classList.remove('active');
-            } else {
-                document.getElementById('seg-focus').classList.remove('active');
-                document.getElementById('seg-break').classList.add('active');
-            }
-        }
 
-        function addHabit() {
-            const name = document.getElementById('habit-name').value;
-            if (!name) return;
-            habits.push({ id: Date.now(), name, completedDates: [] });
-            saveToStorage();
-            document.getElementById('habit-name').value = '';
-            renderHabits();
-        }
-        function toggleHabit(id) {
-            const today = new Date().toISOString().split('T')[0];
-            const habit = habits.find(h => h.id === id);
-            const index = habit.completedDates.indexOf(today);
-            if (index > -1) habit.completedDates.splice(index, 1); else habit.completedDates.push(today);
-            saveToStorage();
-            renderHabits();
-        }
-        function deleteHabit(id) {
-            habits = habits.filter(h => h.id !== id);
-            saveToStorage();
-            renderHabits();
-        }
-        function renderHabits() {
-            const list = document.getElementById('habit-list');
-            list.innerHTML = '';
-            const today = new Date().toISOString().split('T')[0];
-            habits.forEach(habit => {
-                const isDone = habit.completedDates.includes(today);
-                const streak = habit.completedDates.length;
-                list.innerHTML += `
-                    <div class="glass-card p-4 rounded-[var(--radius-md)] flex items-center gap-4 animate-fadeIn">
-                        <button onclick="toggleHabit(${habit.id})" class="w-8 h-8 rounded-full border-2 ${isDone ? 'bg-green-500 border-green-500' : 'border-gray-300'} flex items-center justify-center transition-colors">
-                            ${isDone ? '<i data-lucide="check" class="w-5 h-5 text-white"></i>' : ''}
-                        </button>
-                        <div class="flex-1">
-                            <div class="font-bold" style="color: var(--text-main); ${isDone ? 'line-through text-gray-400' : ''}">${habit.name}</div>
-                            <div class="text-[10px] text-gray-400">Streak: ${streak} days</div>
-                        </div>
-                        <button onclick="deleteHabit(${habit.id})" class="text-gray-300 hover:text-red-500 transition-colors">
-                            <i data-lucide="trash-2" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                `;
-            });
-            lucide.createIcons();
-        }
-
-        function addNote() {
-            const text = document.getElementById('note-text').value;
-            if (!text) return;
-            const date = new Date().toLocaleString();
-            notes.unshift({ id: Date.now(), text, date });
-            saveToStorage();
-            document.getElementById('note-text').value = '';
-            renderNotes();
-        }
-        function deleteNote(id) {
-            notes = notes.filter(n => n.id !== id);
-            saveToStorage();
-            renderNotes();
-        }
-        function renderNotes() {
-            const list = document.getElementById('notes-list');
-            list.innerHTML = '';
-            notes.forEach(note => {
-                list.innerHTML += `
-                    <div class="glass-card p-4 rounded-[var(--radius-md)] animate-fadeIn">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-[10px] text-gray-400 font-medium">${note.date}</span>
-                            <button onclick="deleteNote(${note.id})" class="text-gray-300 hover:text-red-500 transition-colors">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                        <div class="text-sm leading-relaxed" style="color: var(--text-main);">${note.text}</div>
-                    </div>
-                `;
-            });
-            lucide.createIcons();
-        }
-
-        applyTheme();
-        renderNav();
-        switchTab('today', TAB_MAP['today'].title);
-        updateTimerDisplay();
+            document.getElementById('full-note-text').addEventListener('input', handleNoteEdit);
+        };
     </script>
 </body>
 </html>
