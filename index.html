@@ -132,20 +132,31 @@
             transform: scale(1.1);
         }
 
-        /* Drag and Drop Styles */
+        /* Optimized Drag and Drop Styles */
         .draggable-item {
-            transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1), box-shadow 0.2s ease;
+            transition: transform 0.15s cubic-bezier(0.2, 0, 0.2, 1);
             touch-action: none;
+            will-change: transform;
         }
         .dragging {
             transform: scale(1.03);
             box-shadow: 0 12px 24px rgba(0,0,0,0.5);
             z-index: 50;
             opacity: 0.9;
+            transition: none !important;
+            will-change: transform;
         }
         .fixed-item {
             background-color: rgba(255, 255, 255, 0.03);
             cursor: not-allowed;
+        }
+        .no-blur {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background-color: rgba(28, 28, 30, 0.9) !important;
+        }
+        .drag-handle {
+            touch-action: none;
         }
     </style>
 </head>
@@ -360,7 +371,6 @@
         let notes = JSON.parse(localStorage.getItem('daily_notes')) || [];
         let customEvents = JSON.parse(localStorage.getItem('daily_events')) || [];
 
-        // Migration: ensure no 'timer' and consistent format
         let savedOrder = JSON.parse(localStorage.getItem('daily_tab_order'));
         let tabOrder = savedOrder ? savedOrder.filter(t => t !== 'timer') : ['notes', 'homework', 'calendar', 'habits'];
 
@@ -401,9 +411,7 @@
             const container = document.getElementById('nav-container');
             container.innerHTML = '';
 
-            // Only tabs in tabOrder appear in nav (Today is center)
             const navTabs = tabOrder;
-
             const mid = Math.floor(navTabs.length / 2);
             const leftTabs = navTabs.slice(0, mid);
             const rightTabs = navTabs.slice(mid);
@@ -501,12 +509,10 @@
 
             const mid = Math.floor(tabOrder.length / 2);
 
-            // Render Left
             for(let i=0; i<mid; i++) {
                 list.innerHTML += createOrderRow(tabOrder[i], i);
             }
 
-            // Render Today (Fixed)
             list.innerHTML += `
                 <div class="flex items-center justify-between p-3 ios-card rounded-xl fixed-item opacity-60">
                     <div class="flex items-center gap-3">
@@ -517,7 +523,6 @@
                 </div>
             `;
 
-            // Render Right
             for(let i=mid; i<tabOrder.length; i++) {
                 list.innerHTML += createOrderRow(tabOrder[i], i);
             }
@@ -530,7 +535,7 @@
             return `
                 <div class="draggable-item flex items-center justify-between p-3 ios-card rounded-xl cursor-pointer" data-id="${tabId}" data-index="${index}">
                     <span style="color: var(--text-main);">${TAB_MAP[tabId].title}</span>
-                    <div class="text-gray-500">
+                    <div class="text-gray-500 drag-handle">
                         <i data-lucide="grip-vertical" class="w-5 h-5"></i>
                     </div>
                 </div>
@@ -544,23 +549,39 @@
             renderSettingsOrder();
         }
 
-        // Drag and Drop Logic
+        // Optimized Drag and Drop Logic
         function initDragAndDrop() {
             const items = document.querySelectorAll('.draggable-item');
             let draggedItem = null;
             let startY = 0;
             let currentY = 0;
-            let initialOrder = [];
+            let cachedPositions = [];
+            let rafId = null;
 
             items.forEach(item => {
                 item.addEventListener('pointerdown', (e) => {
+                    if (!e.target.closest('.drag-handle')) return;
+
                     draggedItem = item;
                     startY = e.clientY;
                     currentY = e.clientY;
-                    initialOrder = [...tabOrder];
+
+                    // Cache layout once
+                    cachedPositions = items.map(el => {
+                        const rect = el.getBoundingClientRect();
+                        return {
+                            id: el.dataset.id,
+                            top: rect.top,
+                            height: rect.height,
+                            center: rect.top + rect.height / 2
+                        };
+                    });
 
                     item.setPointerCapture(e.pointerId);
                     item.classList.add('dragging');
+
+                    // Optimization: Remove blur from list
+                    document.querySelectorAll('.ios-card').forEach(card => card.classList.add('no-blur'));
                     document.body.style.overflow = 'hidden';
                     if (navigator.vibrate) navigator.vibrate(10);
                 });
@@ -568,46 +589,24 @@
                 item.addEventListener('pointermove', (e) => {
                     if (!draggedItem) return;
                     currentY = e.clientY;
-                    const deltaY = currentY - startY;
-                    draggedItem.style.transform = `translateY(${deltaY}px) scale(1.03)`;
 
-                    // Find closest element to hover over
-                    const siblings = [...document.querySelectorAll('.draggable-item')];
-                    const closest = siblings.find(sib => {
-                        if (sib === draggedItem) return false;
-                        const box = sib.getBoundingClientRect();
-                        const centerY = box.top + box.height / 2;
-                        return Math.abs(currentY - centerY) < sib.offsetHeight / 2;
-                    });
-
-                    if (closest) {
-                        const draggedIdx = parseInt(draggedItem.dataset.index);
-                        const targetIdx = parseInt(closest.dataset.index);
-
-                        if (draggedIdx !== targetIdx) {
-                            // Swap in tabOrder
-                            const newOrder = [...tabOrder];
-                            const [movedItem] = newOrder.splice(draggedIdx, 1);
-                            newOrder.splice(targetIdx, 0, movedItem);
-
-                            tabOrder = newOrder;
-                            renderSettingsOrder(); // Re-render to update visual positions
-
-                            // Re-assign as current dragged item to maintain state
-                            const newDragged = document.querySelector(`[data-id="${movedItem}"]`);
-                            newDragged.classList.add('dragging');
-                            draggedItem = newDragged;
-                            draggedItem.style.transform = `translateY(${deltaY}px) scale(1.03)`;
-                        }
-                    }
+                    if (rafId) cancelAnimationFrame(rafId);
+                    rafId = requestAnimationFrame(updateDragPosition);
                 });
 
                 item.addEventListener('pointerup', (e) => {
                     if (!draggedItem) return;
 
+                    // Finalize Order
+                    const finalOrder = [];
+                    const itemsNow = [...document.querySelectorAll('.draggable-item')];
+                    itemsNow.forEach(el => finalOrder.push(el.dataset.id));
+                    tabOrder = finalOrder;
+
                     draggedItem.classList.remove('dragging');
                     draggedItem.style.transform = '';
                     document.body.style.overflow = '';
+                    document.querySelectorAll('.ios-card').forEach(card => card.classList.remove('no-blur'));
 
                     if (navigator.vibrate) navigator.vibrate(10);
 
@@ -616,8 +615,55 @@
                     renderSettingsOrder();
 
                     draggedItem = null;
+                    if (rafId) cancelAnimationFrame(rafId);
                 });
             });
+
+            function updateDragPosition() {
+                if (!draggedItem) return;
+
+                const deltaY = currentY - startY;
+                draggedItem.style.transform = `translate3d(0, ${deltaY}px, 0) scale(1.03)`;
+
+                // Determine new index based on cached positions
+                let newIndex = -1;
+                const currentIdx = parseInt(draggedItem.dataset.index);
+
+                // Calculate based on center of items
+                const sorted = [...cachedPositions];
+                // Note: we're approximating movement since we don't re-render
+                // In a fully optimized a-frame, we shift others with transforms
+                // To keep this clean and match requirements:
+                const closest = sorted.find(pos => Math.abs(currentY - pos.center) < pos.height / 2);
+
+                if (closest) {
+                    const targetIdx = sorted.findIndex(p => p.id === closest.id);
+                    if (targetIdx !== currentIdx) {
+                        // We don't re-render here, we just update the logic for the drop
+                        // But user wants a "gap" or shift.
+                        // To achieve this without re-render, we'd need to apply transforms to siblings.
+                        shiftSiblings(currentIdx, targetIdx);
+                    }
+                }
+            }
+
+            function shiftSiblings(from, to) {
+                const all = document.querySelectorAll('.draggable-item');
+                const height = cachedPositions[0]?.height || 50;
+                const gap = 8; // space-y-2
+                const step = height + gap;
+
+                all.forEach((el, idx) => {
+                    if (el === draggedItem) return;
+                    let offset = 0;
+                    if (from < to) {
+                        if (idx > from && idx <= to) offset = -step;
+                    } else {
+                        if (idx < from && idx >= to) offset = step;
+                    }
+                    el.style.transform = `translate3d(0, ${offset}px, 0)`;
+                });
+            }
         }
 
         // --- Homework Logic ---
