@@ -15,11 +15,15 @@
     <style>
         :root {
             --bg-color: #000000;
-            --card-color: #1c1c1e;
             --text-main: #ffffff;
             --text-muted: #8e8e93;
-            --border-color: #38383a;
             --accent-color: #0a84ff;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
         }
         body {
             background-color: var(--bg-color);
@@ -27,50 +31,78 @@
             -webkit-tap-highlight-color: transparent;
             user-select: none;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            transition: background-color 0.3s, color 0.3s;
+            overflow: hidden;
         }
         .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.2s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .nav-item.active { color: var(--accent-color); }
-        .ios-card { background-color: var(--card-color); border: 1px solid var(--border-color); }
-        .ios-input { background-color: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color); }
-
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .calendar-day { aspect-ratio: 1/1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.8rem; position: relative; }
-        .dot-container { display: flex; gap: 2px; justify-content: center; margin-top: 2px; flex-wrap: wrap; }
-        .dot { width: 4px; height: 4px; border-radius: 50%; }
-
-        /* Glassmorphism & Today Dashboard */
+        /* Shared Glass Elements */
         .glass-card {
-            background: rgba(255, 255, 255, 0.08);
+            background: var(--glass-bg);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
             transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .glass-card:active {
-            transform: scale(0.97);
+        .glass-card:active { transform: scale(0.97); }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            transition: border-color 0.2s;
         }
-        .bg-glow {
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: -1;
-            opacity: 0.4;
+        .glass-input:focus {
+            border-color: var(--accent-color);
+            outline: none;
         }
 
-        /* iOS Floating Nav & Glassmorphism */
+        .glass-button {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            transition: all 0.2s;
+        }
+        .glass-button:active { transform: scale(0.95); }
+        .glass-button-primary {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+        }
+
+        /* Tab System */
+        .tab-content { display: none; }
+        .tab-content.active {
+            display: block;
+            animation: tabFade 0.3s ease-out;
+        }
+        @keyframes tabFade {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Background Glows */
+        .bg-glow {
+            position: fixed;
+            width: 350px;
+            height: 350px;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: -1;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Navigation */
         .glass-nav {
-            background: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid var(--glass-border);
             border-radius: 999px;
             width: 92%;
             max-width: 400px;
@@ -81,33 +113,23 @@
             position: fixed;
             z-index: 100;
         }
-
-        @media (display-mode: standalone) {
-            .glass-nav {
-                bottom: calc(48px + env(safe-area-inset-bottom)) !important;
-            }
-        }
-        body.dark-mode .glass-nav {
-            background: rgba(28, 28, 30, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
         .nav-item {
             position: relative;
             z-index: 1;
-            transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: color 0.3s;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             width: 80px;
             height: 54px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-muted);
         }
         .nav-circle {
             position: absolute;
             width: 72px;
             height: 48px;
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 24px;
             z-index: -1;
             transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
@@ -116,15 +138,10 @@
             left: 50%;
             transform: translate(-50%, -50%) scale(0.8);
         }
-        body.dark-mode .nav-circle {
-            background: rgba(255, 255, 255, 0.1);
-        }
+        .nav-item.active { color: var(--accent-color) !important; }
         .nav-item.active .nav-circle {
             opacity: 1;
             transform: translate(-50%, -50%) scale(1);
-        }
-        .nav-item.active {
-            color: var(--accent-color) !important;
         }
         .nav-home {
             width: 90px;
@@ -132,10 +149,77 @@
             transform: scale(1.1);
         }
 
-        /* Simplified Drag and Drop Styles */
+        /* Component Specifics */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .calendar-day {
+            aspect-ratio: 1/1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            position: relative;
+        }
+        .dot { width: 4px; height: 4px; border-radius: 50%; }
+        .dot-container { display: flex; gap: 2px; justify-content: center; margin-top: 2px; flex-wrap: wrap; }
+
+        .timer-circle {
+            position: relative;
+            width: 240px;
+            height: 240px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .timer-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        .timer-svg circle {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+        }
+        .timer-bg { stroke: rgba(255,255,255,0.1); }
+        .timer-progress {
+            stroke: var(--accent-color);
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        .segmented-control {
+            display: flex;
+            background: rgba(0,0,0,0.4);
+            padding: 4px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--glass-border);
+        }
+        .segment {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: calc(var(--radius-sm) - 4px);
+            transition: all 0.2s;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+        .segment.active {
+            background: var(--glass-bg);
+            color: var(--text-main);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
         .draggable-item {
             transition: transform 0.2s ease;
             touch-action: none;
+            will-change: transform;
         }
         .dragging {
             transform: scale(1.03);
@@ -148,16 +232,18 @@
             background-color: rgba(255, 255, 255, 0.03);
             cursor: not-allowed;
         }
-        .drag-handle {
-            touch-action: none;
-        }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
 
-    <header class="pt-12 pb-4 px-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10 transition-colors flex justify-between items-center" style="background-color: var(--card-color); border-color: var(--border-color);">
+    <!-- Universal Background Glows -->
+    <div class="bg-glow bg-blue-600 top-0 -left-10"></div>
+    <div class="bg-glow bg-purple-600 bottom-0 -right-10"></div>
+    <div class="bg-glow bg-pink-600 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+
+    <header class="pt-12 pb-4 px-6 sticky top-0 z-10 transition-colors flex justify-between items-center">
         <h1 id="page-title" class="text-2xl font-bold" style="color: var(--text-main);">Today</h1>
-        <button onclick="switchTab('settings', 'Settings')" class="p-2 rounded-full active:bg-gray-200 dark:active:bg-gray-700 transition-colors">
+        <button onclick="switchTab('settings', 'Settings')" class="p-2 rounded-full active:bg-white/10 transition-colors">
             <i data-lucide="settings" class="w-6 h-6" style="color: var(--text-main);"></i>
         </button>
     </header>
@@ -167,13 +253,7 @@
         <!-- Today Tab -->
         <div id="today" class="tab-content active">
             <div class="relative z-10 grid grid-cols-2 gap-4">
-                <!-- Glows -->
-                <div class="bg-glow bg-blue-600 top-0 -left-10"></div>
-                <div class="bg-glow bg-purple-600 bottom-0 -right-10"></div>
-                <div class="bg-glow bg-pink-600 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
-
-                <!-- Tasks Card -->
-                <div onclick="switchTab('homework', 'Homework')" class="glass-card p-5 rounded-[24px] flex flex-col justify-between h-40 cursor-pointer">
+                <div onclick="switchTab('homework', 'Homework')" class="glass-card p-5 rounded-[var(--radius-lg)] flex flex-col justify-between h-40 cursor-pointer">
                     <div class="flex justify-between items-start">
                         <i data-lucide="list-todo" class="w-5 h-5 text-blue-400"></i>
                         <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Tasks</span>
@@ -184,8 +264,7 @@
                     </div>
                 </div>
 
-                <!-- Habits Card -->
-                <div onclick="switchTab('habits', 'Habits')" class="glass-card p-5 rounded-[24px] flex flex-col justify-between h-40 cursor-pointer">
+                <div onclick="switchTab('habits', 'Habits')" class="glass-card p-5 rounded-[var(--radius-lg)] flex flex-col justify-between h-40 cursor-pointer">
                     <div class="flex justify-between items-start">
                         <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
                         <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Habits</span>
@@ -196,8 +275,7 @@
                     </div>
                 </div>
 
-                <!-- Journal Card -->
-                <div onclick="switchTab('notes', 'Journal')" class="glass-card p-5 rounded-[24px] flex flex-col justify-between h-40 cursor-pointer">
+                <div onclick="switchTab('notes', 'Journal')" class="glass-card p-5 rounded-[var(--radius-lg)] flex flex-col justify-between h-40 cursor-pointer">
                     <div class="flex justify-between items-start">
                         <i data-lucide="book-open" class="w-5 h-5 text-purple-400"></i>
                         <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Journal</span>
@@ -208,8 +286,7 @@
                     </div>
                 </div>
 
-                <!-- Timer Card -->
-                <div onclick="switchTab('timer', 'Timer')" class="glass-card p-5 rounded-[24px] flex flex-col justify-between h-40 cursor-pointer">
+                <div onclick="switchTab('timer', 'Timer')" class="glass-card p-5 rounded-[var(--radius-lg)] flex flex-col justify-between h-40 cursor-pointer">
                     <div class="flex justify-between items-start">
                         <i data-lucide="timer" class="w-5 h-5 text-orange-400"></i>
                         <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Pomodoro</span>
@@ -224,35 +301,35 @@
 
         <!-- Notes Tab -->
         <div id="notes" class="tab-content">
-            <div class="ios-card p-6 rounded-2xl shadow-sm mb-6">
+            <div class="glass-card p-6 rounded-[var(--radius-lg)] mb-6">
                 <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">New Entry</h2>
-                <textarea id="note-text" rows="3" placeholder="What's on your mind?" class="w-full p-3 rounded-xl outline-none ios-input focus:ring-2 focus:ring-blue-400 transition-all resize-none"></textarea>
-                <button onclick="addNote()" class="w-full mt-3 bg-blue-500 text-white p-3 rounded-xl font-semibold active:scale-95 transition-transform">Save Note</button>
+                <textarea id="note-text" rows="3" placeholder="What's on your mind?" class="w-full p-3 rounded-xl outline-none glass-input focus:ring-2 focus:ring-blue-400 transition-all resize-none mb-3"></textarea>
+                <button onclick="addNote()" class="w-full glass-button glass-button-primary p-3 rounded-xl font-semibold active:scale-95 transition-transform">Save Note</button>
             </div>
             <div id="notes-list" class="space-y-3"></div>
         </div>
 
         <!-- Homework Tab -->
         <div id="homework" class="tab-content">
-            <div class="ios-card p-6 rounded-2xl shadow-sm mb-6">
+            <div class="glass-card p-6 rounded-[var(--radius-lg)] mb-6">
                 <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Add New Task</h2>
                 <div class="space-y-3">
-                    <select id="hw-subject" class="w-full p-3 rounded-xl outline-none ios-input focus:ring-2 focus:ring-blue-400 transition-all">
+                    <select id="hw-subject" class="w-full p-3 rounded-xl outline-none glass-input focus:ring-2 focus:ring-blue-400 transition-all">
                         <option value="" disabled selected>Select Subject</option>
                         <option value="ANJ">ANJ</option><option value="RUJ">RUJ</option><option value="DEJ">DEJ</option>
                         <option value="FYZ">FYZ</option><option value="GEO">GEO</option><option value="CHE">CHE</option>
                         <option value="INF">INF</option><option value="MAT">MAT</option><option value="OBN">OBN</option>
                         <option value="SJL">SJL</option><option value="LIT">LIT</option><option value="TSV">TSV</option>
                     </select>
-                    <input type="text" id="hw-task" placeholder="What needs to be done?" class="w-full p-3 rounded-xl outline-none ios-input focus:ring-2 focus:ring-blue-400 transition-all">
+                    <input type="text" id="hw-task" placeholder="What needs to be done?" class="w-full p-3 rounded-xl outline-none glass-input focus:ring-2 focus:ring-blue-400 transition-all">
                     <div class="flex gap-2">
-                        <input type="date" id="hw-date" class="flex-1 p-3 rounded-xl outline-none ios-input focus:ring-2 focus:ring-blue-400 transition-all">
-                        <select id="hw-type" class="p-3 rounded-xl outline-none ios-input focus:ring-2 focus:ring-blue-400 transition-all">
+                        <input type="date" id="hw-date" class="flex-1 p-3 rounded-xl outline-none glass-input focus:ring-2 focus:ring-blue-400 transition-all">
+                        <select id="hw-type" class="p-3 rounded-xl outline-none glass-input focus:ring-2 focus:ring-blue-400 transition-all">
                             <option value="homework">HW</option>
                             <option value="test">Test</option>
                         </select>
                     </div>
-                    <button onclick="addHomework()" class="w-full bg-blue-500 text-white p-3 rounded-xl font-semibold active:scale-95 transition-transform">Save Task</button>
+                    <button onclick="addHomework()" class="w-full glass-button glass-button-primary p-3 rounded-xl font-semibold active:scale-95 transition-transform">Save Task</button>
                 </div>
             </div>
             <div id="hw-list" class="space-y-3"></div>
@@ -260,10 +337,10 @@
 
         <!-- Calendar Tab -->
         <div id="calendar" class="tab-content">
-            <div class="ios-card p-6 rounded-2xl shadow-sm">
+            <div class="glass-card p-6 rounded-[var(--radius-lg)]">
                 <div class="flex justify-between items-center mb-6">
                     <h2 id="calendar-month" class="text-lg font-bold" style="color: var(--text-main);">Month Year</h2>
-                    <button onclick="openEventModal()" class="bg-blue-500 text-white p-2 rounded-full active:scale-90 transition-transform">
+                    <button onclick="openEventModal()" class="glass-button glass-button-primary p-2 rounded-full active:scale-90 transition-transform">
                         <i data-lucide="plus" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -276,27 +353,33 @@
 
         <!-- Timer Tab -->
         <div id="timer" class="tab-content">
-            <div class="ios-card p-8 rounded-3xl shadow-sm text-center mb-6">
-                <div class="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-2">Pomodoro</div>
-                <div id="timer-display" class="text-7xl font-mono font-bold mb-8" style="color: var(--text-main);">25:00</div>
-                <div class="flex justify-center gap-4">
-                    <button id="timer-btn" onclick="toggleTimer()" class="bg-blue-500 text-white w-32 py-3 rounded-full font-semibold active:scale-95 transition-transform shadow-lg shadow-blue-200">Start</button>
-                    <button onclick="resetTimer()" class="ios-card text-gray-600 w-32 py-3 rounded-full font-semibold active:scale-95 transition-transform">Reset</button>
+            <div class="glass-card p-8 rounded-[var(--radius-lg)] text-center mb-6">
+                <div class="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-8">Pomodoro</div>
+                <div class="timer-circle">
+                    <svg class="timer-svg" width="240" height="240">
+                        <circle class="timer-bg" cx="120" cy="120" r="110"></circle>
+                        <circle id="timer-progress-ring" class="timer-progress" cx="120" cy="120" r="110" stroke-dasharray="691" stroke-dashoffset="0"></circle>
+                    </svg>
+                    <div id="timer-display" class="text-6xl font-mono font-bold" style="color: var(--text-main);">25:00</div>
+                </div>
+                <div class="flex justify-center gap-4 mt-8">
+                    <button id="timer-btn" onclick="toggleTimer()" class="glass-button glass-button-primary w-32 py-3 rounded-full font-semibold active:scale-95 transition-transform">Start</button>
+                    <button onclick="resetTimer()" class="glass-button w-32 py-3 rounded-full font-semibold active:scale-95 transition-transform">Reset</button>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="setTimer(25)" class="ios-card p-4 rounded-2xl shadow-sm text-sm font-medium" style="color: var(--text-main);">Focus (25m)</button>
-                <button onclick="setTimer(5)" class="ios-card p-4 rounded-2xl shadow-sm text-sm font-medium" style="color: var(--text-main);">Break (5m)</button>
+            <div class="segmented-control max-w-xs mx-auto">
+                <div id="seg-focus" onclick="setTimer(25)" class="segment active">Focus (25m)</div>
+                <div id="seg-break" onclick="setTimer(5)" class="segment">Break (5m)</div>
             </div>
         </div>
 
         <!-- Habits Tab -->
         <div id="habits" class="tab-content">
-            <div class="ios-card p-6 rounded-2xl shadow-sm mb-6">
+            <div class="glass-card p-6 rounded-[var(--radius-lg)] mb-6">
                 <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Add New Habit</h2>
                 <div class="flex gap-2">
-                    <input type="text" id="habit-name" placeholder="e.g. Drink Water" class="flex-1 p-3 rounded-xl outline-none ios-input focus:ring-2 focus:ring-blue-400 transition-all">
-                    <button onclick="addHabit()" class="bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold active:scale-95 transition-transform">Add</button>
+                    <input type="text" id="habit-name" placeholder="e.g. Drink Water" class="flex-1 p-3 rounded-xl outline-none glass-input focus:ring-2 focus:ring-blue-400 transition-all">
+                    <button onclick="addHabit()" class="glass-button glass-button-primary px-6 py-3 rounded-xl font-semibold active:scale-95 transition-transform">Add</button>
                 </div>
             </div>
             <div id="habit-list" class="space-y-3"></div>
@@ -304,37 +387,37 @@
 
         <!-- Settings Tab -->
         <div id="settings" class="tab-content">
-            <div class="ios-card p-6 rounded-2xl shadow-sm mb-6">
+            <div class="glass-card p-6 rounded-[var(--radius-lg)] mb-6">
                 <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">App Settings</h2>
-                <div class="flex justify-between items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                <div class="flex justify-between items-center p-3 rounded-xl glass-input">
                     <span style="color: var(--text-main);">Version</span>
                     <span class="text-sm text-gray-400">v2.0 (Dark Mode Only)</span>
                 </div>
             </div>
-            <div class="ios-card p-6 rounded-2xl shadow-sm">
+            <div class="glass-card p-6 rounded-[var(--radius-lg)]">
                 <h2 class="text-lg font-semibold mb-4" style="color: var(--text-main);">Main Tab Order</h2>
                 <p class="text-xs text-gray-400 mb-4">Arrange your primary tools. Today is fixed in the center.</p>
                 <div id="tab-order-list" class="space-y-2 mb-6"></div>
-                <button onclick="resetTabOrder()" class="w-full bg-gray-700 text-white p-3 rounded-xl font-semibold active:scale-95 transition-transform text-sm">Reset to default</button>
+                <button onclick="resetTabOrder()" class="w-full glass-button bg-gray-700 text-white p-3 rounded-xl font-semibold active:scale-95 transition-transform text-sm">Reset to default</button>
             </div>
         </div>
 
     </main>
 
     <!-- Custom Event Modal -->
-    <div id="event-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-6 backdrop-blur-sm">
-        <div class="ios-card w-full max-w-xs p-6 rounded-3xl shadow-2xl">
+    <div id="event-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-6 backdrop-blur-md">
+        <div class="glass-card w-full max-w-xs p-6 rounded-[var(--radius-lg)] shadow-2xl">
             <h2 class="text-xl font-bold mb-4" style="color: var(--text-main);">Add Event</h2>
             <div class="space-y-3">
-                <input type="text" id="ev-title" placeholder="Event Title" class="w-full p-3 rounded-xl outline-none ios-input">
-                <input type="date" id="ev-date" class="w-full p-3 rounded-xl outline-none ios-input">
+                <input type="text" id="ev-title" placeholder="Event Title" class="w-full p-3 rounded-xl outline-none glass-input">
+                <input type="date" id="ev-date" class="w-full p-3 rounded-xl outline-none glass-input">
                 <div class="flex items-center gap-2">
                     <span class="text-sm" style="color: var(--text-main);">Color:</span>
                     <input type="color" id="ev-color" value="#007aff" class="w-10 h-10 rounded-full bg-transparent cursor-pointer">
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-sm" style="color: var(--text-main);">Repeat:</span>
-                    <select id="ev-repeat" class="flex-1 p-3 rounded-xl outline-none ios-input">
+                    <select id="ev-repeat" class="flex-1 p-3 rounded-xl outline-none glass-input">
                         <option value="none">No Repeat</option>
                         <option value="daily">Daily</option>
                         <option value="weekly">Weekly</option>
@@ -342,8 +425,8 @@
                     </select>
                 </div>
                 <div class="flex gap-2 mt-4">
-                    <button onclick="closeEventModal()" class="flex-1 p-3 rounded-xl font-semibold ios-input">Cancel</button>
-                    <button onclick="saveCustomEvent()" class="flex-1 p-3 rounded-xl font-semibold bg-blue-500 text-white">Save</button>
+                    <button onclick="closeEventModal()" class="flex-1 p-3 rounded-xl font-semibold glass-button">Cancel</button>
+                    <button onclick="saveCustomEvent()" class="flex-1 p-3 rounded-xl font-semibold glass-button glass-button-primary">Save</button>
                 </div>
             </div>
         </div>
@@ -351,7 +434,6 @@
 
     <nav class="glass-nav fixed bottom-0 left-1/2 -translate-x-1/2 flex items-center justify-center safe-area-bottom">
         <div id="nav-container" class="flex justify-around items-center w-full px-2">
-            <!-- Nav items will be injected here based on order -->
         </div>
     </nav>
 
@@ -379,6 +461,13 @@
             'settings': { title: 'Settings', icon: 'settings' }
         };
 
+        const SUBJECT_COLORS = {
+            'ANJ': '#ff453a', 'RUJ': '#ff9f0a', 'DEJ': '#ffcc00',
+            'FYZ': '#32ade6', 'GEO': '#30d158', 'CHE': '#bf5af2',
+            'INF': '#5e5ce6', 'MAT': '#ff375f', 'OBN': '#a2845e',
+            'SJL': '#64d2ff', 'LIT': '#ffac41', 'TSV': '#a2a2a2'
+        };
+
         function saveToStorage() {
             localStorage.setItem('daily_homework', JSON.stringify(homeworks));
             localStorage.setItem('daily_habits', JSON.stringify(habits));
@@ -388,22 +477,13 @@
             localStorage.setItem('daily_theme', currentTheme);
         }
 
-        // --- Theme Logic ---
-        function toggleTheme() {
-            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-            applyTheme();
-            saveToStorage();
-        }
-
         function applyTheme() {
             document.body.classList.add('dark-mode');
         }
 
-        // --- Tab System ---
         function renderNav() {
             const container = document.getElementById('nav-container');
             container.innerHTML = '';
-
             const navTabs = tabOrder;
             const mid = Math.floor(navTabs.length / 2);
             const leftTabs = navTabs.slice(0, mid);
@@ -425,7 +505,6 @@
                 const info = TAB_MAP[tabId];
                 container.innerHTML += createNavHtml(tabId, info);
             });
-
             lucide.createIcons();
         }
 
@@ -460,79 +539,52 @@
             if(tabId === 'settings') renderSettingsOrder();
         }
 
-        // --- Today Dashboard Logic ---
         function renderTodayDashboard() {
             const todayStr = new Date().toISOString().split('T')[0];
-
             const todayHws = homeworks.filter(hw => hw.date === todayStr);
             document.getElementById('today-tasks-count').innerText = `${todayHws.length} Due`;
-
-            const nextTest = homeworks
-                .filter(hw => hw.type === 'test' && new Date(hw.date) >= new Date())
-                .sort((a,b) => new Date(a.date) - new Date(b.date))[0];
-
+            const nextTest = homeworks.filter(hw => hw.type === 'test' && new Date(hw.date) >= new Date()).sort((a,b) => new Date(a.date) - new Date(b.date))[0];
             if (nextTest) {
-                const diffTime = new Date(nextTest.date) - new Date();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffDays = Math.ceil((new Date(nextTest.date) - new Date()) / (1000 * 60 * 60 * 24));
                 document.getElementById('today-next-test').innerText = `${nextTest.subject} in ${diffDays}d`;
             } else {
                 document.getElementById('today-next-test').innerText = 'No upcoming tests';
             }
-
             const doneHabits = habits.filter(h => h.completedDates.includes(todayStr)).length;
             document.getElementById('today-habits-progress').innerText = `${doneHabits}/${habits.length} done`;
-
             const hasNoteToday = notes.some(n => n.date.includes(new Date().toLocaleDateString()));
             document.getElementById('today-journal-status').innerText = hasNoteToday ? 'Today\'s entry written' : 'Write today\'s note';
-
             const timerStatus = document.getElementById('today-timer-status');
             if (isTimerRunning) {
-                const mins = Math.floor(timeLeft / 60);
-                const secs = timeLeft % 60;
+                const mins = Math.floor(timeLeft / 60), secs = timeLeft % 60;
                 timerStatus.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} Running`;
             } else {
                 timerStatus.innerText = '25:00 Start';
             }
         }
 
-        // --- Settings / Tab Order Logic ---
         function renderSettingsOrder() {
             const list = document.getElementById('tab-order-list');
             list.innerHTML = '';
-
             const mid = Math.floor(tabOrder.length / 2);
-
-            for(let i=0; i<mid; i++) {
-                list.innerHTML += createOrderRow(tabOrder[i], i);
-            }
-
-            list.innerHTML += `
-                <div class="flex items-center justify-between p-3 ios-card rounded-xl fixed-item opacity-60">
+            for(let i=0; i<mid; i++) list.innerHTML += createOrderRow(tabOrder[i], i);
+            list.innerHTML += `<div class="flex items-center justify-between p-3 ios-card rounded-xl fixed-item opacity-60">
                     <div class="flex items-center gap-3">
                         <i data-lucide="lock" class="w-4 h-4 text-gray-500"></i>
                         <span style="color: var(--text-main);">${TAB_MAP['today'].title}</span>
                     </div>
                     <span class="text-[10px] text-gray-500 font-bold uppercase">Fixed</span>
-                </div>
-            `;
-
-            for(let i=mid; i<tabOrder.length; i++) {
-                list.innerHTML += createOrderRow(tabOrder[i], i);
-            }
-
+                </div>`;
+            for(let i=mid; i<tabOrder.length; i++) list.innerHTML += createOrderRow(tabOrder[i], i);
             lucide.createIcons();
             initDragAndDrop();
         }
 
         function createOrderRow(tabId, index) {
-            return `
-                <div class="draggable-item flex items-center justify-between p-3 ios-card rounded-xl cursor-pointer" data-id="${tabId}" data-index="${index}">
+            return `<div class="draggable-item flex items-center justify-between p-3 ios-card rounded-xl cursor-pointer" data-id="${tabId}" data-index="${index}">
                     <span style="color: var(--text-main);">${TAB_MAP[tabId].title}</span>
-                    <div class="text-gray-500 drag-handle">
-                        <i data-lucide="grip-vertical" class="w-5 h-5"></i>
-                    </div>
-                </div>
-            `;
+                    <div class="text-gray-500 drag-handle"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>
+                </div>`;
         }
 
         function resetTabOrder() {
@@ -542,87 +594,59 @@
             renderSettingsOrder();
         }
 
-        // Simplified Drag and Drop Logic
         function initDragAndDrop() {
             const items = document.querySelectorAll('.draggable-item');
             let draggedItem = null;
-            let startY = 0;
-            let currentY = 0;
+            let startY = 0, currentY = 0;
 
             items.forEach(item => {
                 item.addEventListener('pointerdown', (e) => {
                     if (!e.target.closest('.drag-handle')) return;
-
                     draggedItem = item;
-                    startY = e.clientY;
-                    currentY = e.clientY;
-
+                    startY = e.clientY; currentY = e.clientY;
                     item.setPointerCapture(e.pointerId);
                     item.classList.add('dragging');
                     document.body.style.overflow = 'hidden';
                     if (navigator.vibrate) navigator.vibrate(10);
                 });
-
                 item.addEventListener('pointermove', (e) => {
                     if (!draggedItem) return;
                     currentY = e.clientY;
                     const deltaY = currentY - startY;
                     draggedItem.style.transform = `translate3d(0, ${deltaY}px, 0) scale(1.03)`;
-
-                    // Swap-on-Hover Logic
                     const siblings = [...document.querySelectorAll('.draggable-item')];
                     siblings.forEach(sib => {
                         if (sib === draggedItem) return;
                         const rect = sib.getBoundingClientRect();
-                        const center = rect.top + rect.height / 2;
-
-                        // If pointer crosses the center of another item
-                        if (Math.abs(currentY - center) < 10) {
-                            const draggedIdx = tabOrder.indexOf(draggedItem.dataset.id);
-                            const targetIdx = tabOrder.indexOf(sib.dataset.id);
-
-                            if (draggedIdx !== -1 && targetIdx !== -1 && draggedIdx !== targetIdx) {
-                                // Swap in array
-                                [tabOrder[draggedIdx], tabOrder[targetIdx]] = [tabOrder[targetIdx], tabOrder[draggedIdx]];
-
-                                // Re-render list instantly
+                        if (Math.abs(currentY - (rect.top + rect.height / 2)) < 10) {
+                            const dIdx = tabOrder.indexOf(draggedItem.dataset.id);
+                            const tIdx = tabOrder.indexOf(sib.dataset.id);
+                            if (dIdx !== -1 && tIdx !== -1 && dIdx !== tIdx) {
+                                [tabOrder[dIdx], tabOrder[tIdx]] = [tabOrder[tIdx], tabOrder[dIdx]];
                                 renderSettingsOrder();
-
-                                // Restore the dragging state on the new element
-                                const newDragged = document.querySelector(`[data-id="${tabOrder[targetIdx]}"]`); // This is wrong, we need the one we are moving
-                                // We need the element that is now at the position the user is holding
-                                const activeItem = document.querySelector(`[data-id="${draggedItem.dataset.id}"]`);
-                                activeItem.classList.add('dragging');
-                                activeItem.style.transform = `translate3d(0, ${deltaY}px, 0) scale(1.03)`;
-                                draggedItem = activeItem;
+                                const active = document.querySelector(`[data-id="${draggedItem.dataset.id}"]`);
+                                active.classList.add('dragging');
+                                active.style.transform = `translate3d(0, ${deltaY}px, 0) scale(1.03)`;
+                                draggedItem = active;
                             }
                         }
                     });
                 });
-
                 const handleDrop = () => {
                     if (!draggedItem) return;
-
                     draggedItem.classList.remove('dragging');
                     draggedItem.style.transform = '';
                     document.body.style.overflow = '';
-
                     if (navigator.vibrate) navigator.vibrate(10);
-
-                    saveToStorage();
-                    renderNav();
-                    renderSettingsOrder();
-
+                    saveToStorage(); renderNav(); renderSettingsOrder();
                     draggedItem = null;
                 };
-
                 item.addEventListener('pointerup', handleDrop);
                 item.addEventListener('pointercancel', handleDrop);
                 item.addEventListener('lostpointercapture', handleDrop);
             });
         }
 
-        // --- Homework Logic ---
         function addHomework() {
             const subject = document.getElementById('hw-subject').value;
             const task = document.getElementById('hw-task').value;
@@ -644,12 +668,13 @@
             const list = document.getElementById('hw-list');
             list.innerHTML = '';
             homeworks.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(hw => {
-                const color = hw.type === 'test' ? 'bg-red-500' : 'bg-blue-500';
+                const color = SUBJECT_COLORS[hw.subject] || '#a2a2a2';
+                const isTest = hw.type === 'test';
                 list.innerHTML += `
-                    <div class="ios-card p-4 rounded-2xl shadow-sm flex items-center gap-4 animate-fadeIn">
-                        <div class="${color} w-2 h-10 rounded-full"></div>
+                    <div class="glass-card p-4 rounded-[var(--radius-md)] flex items-center gap-4 animate-fadeIn ${isTest ? 'border-l-4 border-l-red-500' : ''}">
+                        <div class="w-2 h-10 rounded-full" style="background-color: ${color}"></div>
                         <div class="flex-1">
-                            <div class="font-bold" style="color: var(--text-main);">${hw.subject}</div>
+                            <div class="font-bold" style="color: var(--text-main);">${hw.subject} ${isTest ? '<span class="text-red-500 text-xs ml-2 uppercase font-black">Test</span>' : ''}</div>
                             <div class="text-sm" style="color: var(--text-muted);">${hw.task}</div>
                             <div class="text-[10px] text-gray-400">${hw.date}</div>
                         </div>
@@ -662,7 +687,6 @@
             lucide.createIcons();
         }
 
-        // --- Calendar Logic ---
         function openEventModal() { document.getElementById('event-modal').classList.remove('hidden'); }
         function closeEventModal() { document.getElementById('event-modal').classList.add('hidden'); }
         function saveCustomEvent() {
@@ -691,39 +715,40 @@
             for (let i = 0; i < firstDay; i++) daysContainer.innerHTML += `<div></div>`;
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const currentDayDate = new Date(year, month, day);
-
+                const isToday = dateStr === new Date().toISOString().split('T')[0];
                 const dayHws = homeworks.filter(hw => hw.date === dateStr);
-
                 const dayEvs = customEvents.filter(ev => {
                     if (ev.date === dateStr) return true;
                     if (ev.repeat === 'none') return false;
-
                     const evDate = new Date(ev.date);
-                    if (evDate > currentDayDate) return false;
-
+                    if (evDate > new Date(year, month, day)) return false;
                     if (ev.repeat === 'daily') return true;
-                    if (ev.repeat === 'weekly') return evDate.getDay() === currentDayDate.getDay();
-                    if (ev.repeat === 'monthly') return evDate.getDate() === currentDayDate.getDate();
-
+                    if (ev.repeat === 'weekly') return evDate.getDay() === new Date(year, month, day).getDay();
+                    if (ev.repeat === 'monthly') return evDate.getDate() === day;
                     return false;
                 });
-
                 let dots = '';
-                dayHws.forEach(hw => { dots += `<div class="dot ${hw.type === 'test' ? 'bg-red-500' : 'bg-blue-500'}"></div>`; });
-                dayEvs.forEach(ev => { dots += `<div class="dot" style="background-color: ${ev.color}"></div>`; });
-                daysContainer.innerHTML += `<div class="calendar-day ios-card" style="color: var(--text-main);">${day}<div class="dot-container">${dots}</div></div>`;
+                dayHws.forEach(hw => dots += `<div class="dot ${hw.type === 'test' ? 'bg-red-500' : 'bg-blue-500'}"></div>`);
+                dayEvs.forEach(ev => dots += `<div class="dot" style="background-color: ${ev.color}"></div>`);
+                daysContainer.innerHTML += `
+                    <div class="calendar-day glass-card ${isToday ? 'border-blue-500 ring-1 ring-blue-500' : ''}" style="color: var(--text-main);">
+                        ${day}<div class="dot-container">${dots}</div>
+                    </div>`;
             }
         }
 
-        // --- Timer Logic ---
         let timerInterval;
         let timeLeft = 25 * 60;
         let isTimerRunning = false;
         function updateTimerDisplay() {
-            const mins = Math.floor(timeLeft / 60);
-            const secs = timeLeft % 60;
+            const mins = Math.floor(timeLeft / 60), secs = timeLeft % 60;
             document.getElementById('timer-display').innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            const ring = document.getElementById('timer-progress-ring');
+            if (ring) {
+                const total = 25 * 60;
+                const offset = 691 - (691 * (timeLeft / total));
+                ring.style.strokeDashoffset = offset;
+            }
             if (document.getElementById('today') && document.getElementById('today').classList.contains('active')) {
                 renderTodayDashboard();
             }
@@ -752,10 +777,22 @@
             updateTimerDisplay();
             document.getElementById('timer-btn').innerText = 'Start';
             document.getElementById('timer-btn').classList.replace('bg-red-500', 'bg-blue-500');
+            document.getElementById('seg-focus').classList.add('active');
+            document.getElementById('seg-break').classList.remove('active');
         }
-        function setTimer(minutes) { resetTimer(); timeLeft = minutes * 60; updateTimerDisplay(); }
+        function setTimer(minutes) {
+            resetTimer();
+            timeLeft = minutes * 60;
+            updateTimerDisplay();
+            if (minutes === 25) {
+                document.getElementById('seg-focus').classList.add('active');
+                document.getElementById('seg-break').classList.remove('active');
+            } else {
+                document.getElementById('seg-focus').classList.remove('active');
+                document.getElementById('seg-break').classList.add('active');
+            }
+        }
 
-        // --- Habits Logic ---
         function addHabit() {
             const name = document.getElementById('habit-name').value;
             if (!name) return;
@@ -785,7 +822,7 @@
                 const isDone = habit.completedDates.includes(today);
                 const streak = habit.completedDates.length;
                 list.innerHTML += `
-                    <div class="ios-card p-4 rounded-2xl shadow-sm flex items-center gap-4 animate-fadeIn">
+                    <div class="glass-card p-4 rounded-[var(--radius-md)] flex items-center gap-4 animate-fadeIn">
                         <button onclick="toggleHabit(${habit.id})" class="w-8 h-8 rounded-full border-2 ${isDone ? 'bg-green-500 border-green-500' : 'border-gray-300'} flex items-center justify-center transition-colors">
                             ${isDone ? '<i data-lucide="check" class="w-5 h-5 text-white"></i>' : ''}
                         </button>
@@ -802,7 +839,6 @@
             lucide.createIcons();
         }
 
-        // --- Notes Logic ---
         function addNote() {
             const text = document.getElementById('note-text').value;
             if (!text) return;
@@ -822,7 +858,7 @@
             list.innerHTML = '';
             notes.forEach(note => {
                 list.innerHTML += `
-                    <div class="ios-card p-4 rounded-2xl shadow-sm animate-fadeIn">
+                    <div class="glass-card p-4 rounded-[var(--radius-md)] animate-fadeIn">
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-[10px] text-gray-400 font-medium">${note.date}</span>
                             <button onclick="deleteNote(${note.id})" class="text-gray-300 hover:text-red-500 transition-colors">
@@ -836,7 +872,6 @@
             lucide.createIcons();
         }
 
-        // Initialize
         applyTheme();
         renderNav();
         switchTab('today', TAB_MAP['today'].title);
