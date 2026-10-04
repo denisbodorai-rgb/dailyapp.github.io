@@ -381,7 +381,7 @@
             const container = document.getElementById('nav-container');
             container.innerHTML = '';
 
-            // Filter out 'timer' from bottom nav, and 'today' since it's fixed
+            // Filter out 'timer' from bottom nav as requested, and 'today' since it's fixed
             const navTabs = tabOrder.filter(tabId => tabId !== 'timer');
 
             // Split for Today center positioning
@@ -592,7 +592,7 @@
                     if (ev.repeat === 'none') return false;
 
                     const evDate = new Date(ev.date);
-                    if (evDate > currentDayDate) return false;
+                    if (evDate > currentDayDate) return false; // Event hasn't started yet
 
                     if (ev.repeat === 'daily') return true;
                     if (ev.repeat === 'weekly') return evDate.getDay() === currentDayDate.getDay();
